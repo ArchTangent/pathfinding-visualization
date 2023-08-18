@@ -3,7 +3,7 @@ from pygame import Color
 from pygame.freetype import Font
 
 
-class Obstructions:
+class Obstacles:
     """Walls and structures in a tile."""
 
     def __init__(

@@ -1,13 +1,13 @@
 """Tile map with terrain, walls, and structures."""
 from typing import Dict, Tuple
-from helpers import Obstructions, Coords, Settings, to_tile_id
+from helpers import Obstacles, Coords, Settings, to_tile_id
 from pygame import Vector2
 
 
 class Tile:
     """2D Tile, where `p1` is the reference point for drawing."""
 
-    def __init__(self, tid: int, coords: Coords, ts: int, blockers: Obstructions):
+    def __init__(self, tid: int, coords: Coords, ts: int, blockers: Obstacles):
         self.tid = tid
         self.x = coords.x
         self.y = coords.y
@@ -28,10 +28,10 @@ class TileMap:
 
     def __init__(
         self,
-        blocked_tiles: Dict[Tuple[int, int], Obstructions],
+        blocked_tiles: Dict[Tuple[int, int], Obstacles],
         settings: Settings,
     ):
-        ts = settings.tile_size
+        ts = 64
         xdims, ydims = settings.xdims, settings.ydims
         self.xdims = xdims
         self.ydims = ydims
@@ -40,7 +40,7 @@ class TileMap:
                 to_tile_id(x, y, xdims),
                 Coords(x, y),
                 ts,
-                blocked_tiles.get((x, y), Obstructions()),
+                blocked_tiles.get((x, y), Obstacles()),
             )
             for y in range(ydims)
             for x in range(xdims)

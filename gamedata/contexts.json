@@ -1,0 +1,47 @@
+{
+    "terrestrial": {
+        "low": ["low", "medium", "high"],
+        "medium": ["low", "medium", "high"],
+        "high": ["low", "medium", "high"],
+        "shallow": ["low", "medium", "high", "shallow"],
+        "deep": ["shallow"]
+    },
+    "subterranean": {
+        "low": ["low", "medium", "high", "underground"],
+        "medium": ["low", "medium", "high", "underground"],
+        "high": ["low", "medium", "high", "underground"],
+        "shallow": ["low", "medium", "high", "underground"],
+        "underground": ["low", "medium", "high", "underground"]
+    },
+    "amphibious": {
+        "low": ["low", "medium", "high", "shallow"],
+        "medium": ["low", "medium", "high", "shallow"],
+        "high": ["low", "medium", "high", "shallow"],
+        "shallow": ["low", "medium", "high", "shallow"],
+        "deep": ["shallow"]
+    },
+    "deep_amphibious": {
+        "low": ["low", "medium", "high", "shallow", "deep"],
+        "medium": ["low", "medium", "high", "shallow", "deep"],
+        "high": ["low", "medium", "high", "shallow", "deep"],
+        "shallow": ["low", "medium", "high", "shallow", "deep"],
+        "deep": ["low", "medium", "high", "shallow", "deep", "underwater"],
+        "underwater": ["deep"]
+    },
+    "aquatic": {
+        "low": ["shallow", "deep"],
+        "medium": ["shallow", "deep"],
+        "high": ["shallow", "deep"],
+        "shallow": ["shallow", "deep"],
+        "deep": ["shallow", "deep", "underwater"],
+        "underwater": ["deep", "underwater"]
+    },
+    "aerial": {
+        "low": ["low", "medium", "high", "shallow", "deep", "air"],
+        "medium": ["low", "medium", "high", "shallow", "deep", "air"],
+        "high": ["low", "medium", "high", "shallow", "deep", "air"],
+        "shallow": ["low", "medium", "high", "shallow", "deep", "air"],
+        "deep": ["low", "medium", "high", "shallow", "deep", "air"],
+        "air": ["low", "medium", "high", "shallow", "deep", "air"]
+    }
+}

@@ -3,7 +3,6 @@ import pygame, pygame.freetype
 from pygame import Vector2
 from pygame.color import Color
 from pygame.surface import Surface
-from helpers import FovLineType
 
 
 def draw_floor(screen: Surface, pr: Vector2, ts: int, color: Color):

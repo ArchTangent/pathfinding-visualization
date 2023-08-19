@@ -1,0 +1,19 @@
+[
+    {
+        "terrain": [
+            "LLLSDSLL",
+            "LLLSDSLL",
+            "LLSSDSLL",
+            "LSDDDSLL",
+            "LSDSSLLL",
+            "LSDSLLLL"
+        ],
+        "structures": [
+            {
+                "x": 3,
+                "y": 1,
+                "wall_n": 2
+            }
+        ]
+    }
+]

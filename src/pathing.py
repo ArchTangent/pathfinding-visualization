@@ -1,37 +1,58 @@
 """Pathfinding using pathing maps."""
 import pygame
 from helpers import Coords, Obstacles, Settings, in_bounds, to_tile_id
-from movement import MovementType, PathContext, PathContexts, Terrain
+from movement import MovementType, PathContext, PathContexts, Terrain, TerrainData
 from pygame import Color
 from pygame.freetype import Font
 from tile_map import TileMap
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Self, Tuple
+
+
+class Neighbors:
+    """Holds optional Tile IDs for a tile's neighbors."""
+
+    __slots__ = "NW", "N", "NE", "W", "E", "SW", "S", "SE"
+
+    def __init__(self, nw, n, ne, w, e, sw, s, se) -> None:
+        self.NW: Optional[int] = nw
+        self.N: Optional[int] = n
+        self.NE: Optional[int] = ne
+        self.W: Optional[int] = w
+        self.E: Optional[int] = e
+        self.SW: Optional[int] = sw
+        self.S: Optional[int] = s
+        self.SE: Optional[int] = se
+
+    @staticmethod
+    def empty():
+        return Neighbors(None, None, None, None, None, None, None, None)
 
 
 class NeighborMap:
     """Holds tile IDs of neighbors for each tile in a map."""
 
     def __init__(self, xdims: int, ydims: int) -> None:
-        self.cardinal = {}
-        self.diagonal = {}
+        self.inner = {}
         tid = 0
 
         for tid in range(ydims * xdims):
-            ncard, ndiag = NeighborMap.neighbors(tid, xdims, ydims)
-            self.cardinal[tid] = ncard
-            self.diagonal[tid] = ndiag
+            self.inner[tid] = NeighborMap.neighbors(tid, xdims, ydims)
+
+    # def __getitem__(self, key: int) -> List[Optional[int]]:
+    def __getitem__(self, key: int) -> Neighbors:
+        return self.inner[key]
 
     @staticmethod
-    def neighbors(tid: int, xdims: int, ydims: int) -> Tuple[List[int], List[int]]:
+    def neighbors(tid: int, xdims: int, ydims: int) -> Neighbors:
         """Returns cardinal and diagonal neighbors to tile with ID `tid`."""
         div = tid % xdims
+        nw = tid - xdims - 1
         n = tid - xdims
+        ne = tid - xdims + 1
         w = tid - 1
         e = tid + 1
-        s = tid + xdims
-        nw = tid - xdims - 1
-        ne = tid - xdims + 1
         sw = tid + xdims - 1
+        s = tid + xdims
         se = tid + xdims + 1
 
         # X: left edge, right edge, or neither
@@ -54,17 +75,15 @@ class NeighborMap:
             sw = None
             se = None
 
-        cardinal = [nb for nb in (n, w, e, s) if nb is not None]
-        diagonal = [nb for nb in (nw, ne, sw, se) if nb is not None]
-
-        return cardinal, diagonal
+        return Neighbors(nw, n, ne, w, e, sw, s, se)
 
 
 class PathMaps:
     """Holds a PathMap for each movement type."""
 
-    def __init__(self, movement_type: MovementType) -> None:
-        # TODO: create pathing contexts, and PathMap for each
+    def __init__(self, contexts: PathContexts) -> None:
+        # TODO: create pathing contexts, and PathMap for each MovementType in PathingContexts
+        # TODO: create pathing contexts, and PathMap for each MovementType in PathingContexts
         pass
 
 
@@ -76,15 +95,17 @@ class PathMap:
 
     def __init__(
         self,
-        context: PathContext,
         terrain_data: Dict[Tuple[int, int], Terrain],
         blockers: Dict[Tuple[int, int], Obstacles],
+        neighbors: NeighborMap,
+        context: PathContext,
         settings: Settings,
     ) -> None:
         self.tiles: List[PathTile] = []
         self.xdims = settings.xdims
         self.ydims = settings.ydims
 
+        # Populate PathTiles with Terrain
         for y in range(settings.ydims):
             for x in range(settings.xdims):
                 terrain = terrain_data.get((x, y), Terrain.LOW)
@@ -92,20 +113,50 @@ class PathMap:
                 tile = PathTile(terrain, obstacles)
                 self.tiles.append(tile)
 
-        # TODO: set valid neighbors for each tile
-        # Set valid neighbors
-        # for tile in self.tiles:
-        #     tile.set_neighbors_cardinal(pathmap, context)
+        # Find valid neighbors for each PathTile
+        valid_neighbors: Dict[int, Neighbors] = {}
 
-    def in_bounds(self, x: int, y: int) -> bool:
-        return x > 0 and x < self.xdims and y > 0 and y < self.ydims
+        for tid, tile in enumerate(self.tiles):
+            nbrs = neighbors[tid]
+            valid = Neighbors.empty()
+
+            if nbrs.NW and tile.has_valid_neighbor(self.tiles, nbrs.NW, context):
+                valid.NW = nbrs.NW
+            if nbrs.N and tile.has_valid_neighbor(self.tiles, nbrs.N, context):
+                valid.N = nbrs.N
+            if nbrs.NE and tile.has_valid_neighbor(self.tiles, nbrs.NE, context):
+                valid.NE = nbrs.NE
+            if nbrs.W and tile.has_valid_neighbor(self.tiles, nbrs.W, context):
+                valid.W = nbrs.W
+            if nbrs.E and tile.has_valid_neighbor(self.tiles, nbrs.E, context):
+                valid.E = nbrs.E
+            if nbrs.SW and tile.has_valid_neighbor(self.tiles, nbrs.SW, context):
+                valid.SW = nbrs.SW
+            if nbrs.S and tile.has_valid_neighbor(self.tiles, nbrs.S, context):
+                valid.S = nbrs.S
+            if nbrs.SE and tile.has_valid_neighbor(self.tiles, nbrs.SE, context):
+                valid.SE = nbrs.SE
+
+            valid_neighbors[tid] = valid
+
+        # Insert valid neighbors for each PathTile
+        for tid, nbrs in valid_neighbors.items():
+            tile = self.tiles[tid]
+            tile.NW = nbrs.NW
+            tile.N = nbrs.N
+            tile.NE = nbrs.NE
+            tile.W = nbrs.W
+            tile.E = nbrs.E
+            tile.SW = nbrs.SW
+            tile.S = nbrs.S
+            tile.SE = nbrs.SE
 
 
 class PathTile:
     """Terrain, obstructions, and neighbors for a pathfinding tile and movement type.
 
     Notes:
-    - `cardinal` and `diagonal` are the 8 neighbors in given directions.
+    - `NW` to `SE` are the 8 neighbors, stored in TID order.
     - `above` and `below` indicate Air terrain above and Underground/Underwater below.
     - each movement type has its own PathMap and PathTiles.
     """
@@ -115,19 +166,32 @@ class PathTile:
         "structure",
         "wall_n",
         "wall_w",
-        "cardinal",
-        "diagonal",
+        "NW",
+        "N",
+        "NE",
+        "W",
+        "E",
+        "SW",
+        "S",
+        "SE",
         "above",
         "below",
     )
 
     def __init__(self, terrain: Terrain, obstacles: Obstacles) -> None:
-        self.terrain = terrain.value
+        """Create a new instance."""
+        self.terrain: int = terrain.value
         self.structure = obstacles.structure
         self.wall_n = obstacles.wall_n
         self.wall_w = obstacles.wall_w
-        self.cardinal = []
-        self.diagonal = []
+        self.NW: Optional[int] = None
+        self.N: Optional[int] = None
+        self.NE: Optional[int] = None
+        self.W: Optional[int] = None
+        self.E: Optional[int] = None
+        self.SW: Optional[int] = None
+        self.S: Optional[int] = None
+        self.SE: Optional[int] = None
         self.above: int
         self.below: int
 
@@ -154,54 +218,18 @@ class PathTile:
             case Terrain.AIR:
                 raise ValueError("AIR is an invalid base terrain!")
 
-    def set_neighbors_cardinal(self, pathmap: PathMap, context: PathContext):
-        """Sets valid NSEW neighbors by their tile ID (TID)."""
-        # TODO: check all in-bounds neighbors for valid src->tgt pahting context
+    def has_valid_neighbor(
+        self, tiles: List[Self], nid: int, context: PathContext
+    ) -> bool:
+        """Returns `True` if tile at ID `nid` is a valid neighbor.
 
-    def set_neighbors_diagonal(self, pathmap: PathMap, context: PathContext):
-        """Sets valid NSEW neighbors by their tile ID (TID)."""
-        # TODO: check all in-bounds neighbors for valid src->tgt pahting context
+        Neighbor is valid if source terrain's valid terrain intersects target terrain.
+        In other words, source-target connection is a valid pathing context.
+        """
+        src_terrain = self.terrain
+        tgt_terrain = tiles[nid].terrain
 
-
-#   ########  ########   ######   ########
-#      ##     ##        ##           ##
-#      ##     ######     ######      ##
-#      ##     ##              ##     ##
-#      ##     ########  #######      ##
-
-
-def test_neighbors_in_bounds():
-    """Ensures NeighborMap correctly gets in-bounds tiles."""
-    xdims = 3
-    ydims = 3
-
-    expected_cardinal = {
-        0: [1, 3],
-        1: [0, 2, 4],
-        2: [1, 5],
-        3: [0, 4, 6],
-        4: [1, 3, 5, 7],
-        5: [2, 4, 8],
-        6: [3, 7],
-        7: [4, 6, 8],
-        8: [5, 7],
-    }
-    expected_diagonal = {
-        0: [4],
-        1: [3, 5],
-        2: [4],
-        3: [1, 7],
-        4: [0, 2, 6, 8],
-        5: [1, 7],
-        6: [4],
-        7: [3, 5],
-        8: [4],
-    }
-
-    actual = NeighborMap(xdims, ydims)
-
-    assert actual.cardinal == expected_cardinal
-    assert actual.diagonal == expected_diagonal
+        return context[src_terrain] & tgt_terrain > 0
 
 
 #   ##    ##     ##     ########  ##    ##
@@ -215,31 +243,32 @@ if __name__ == "__main__":
 
     pygame.freetype.init()  # type: ignore
 
-    blocked: Dict[Tuple[int, int], Obstacles] = {
-        (4, 4): Obstacles(wall_n=2),
-        (5, 4): Obstacles(wall_w=2),
-        (8, 4): Obstacles(wall_n=2, wall_w=2),
-        (10, 4): Obstacles(wall_n=2),
-        (11, 4): Obstacles(wall_n=2),
-        (13, 7): Obstacles(structure=True),
-        (14, 6): Obstacles(structure=True),
-        (15, 0): Obstacles(wall_w=2),
-        (15, 1): Obstacles(wall_n=2),
-        (19, 4): Obstacles(wall_n=2),
-        (20, 3): Obstacles(wall_w=2),
-        (20, 4): Obstacles(wall_n=2, wall_w=2),
-    }
-
     settings = Settings(
         1280,
         720,
-        Coords(16, 9),
+        Coords(8, 5),
         Font(None, size=16),
         Color("snow"),
     )
 
-    tilemap = TileMap(blocked, settings)
+    terrain_map = [
+        "LLLSDSLL",
+        "LLLSDSLL",
+        "LLSSDSLL",
+        "LSDDDSLL",
+        "LSDSSLLL",
+        "LSDSLLLL"
+    ]
 
+    terrain_data = TerrainData.from_map_data(terrain_map)
+
+    obstacle_data: Dict[Tuple[int, int], Obstacles] = {
+        (3, 0): Obstacles(structure=2),
+    }
+
+    tilemap = TileMap(obstacle_data, settings)
+
+    # TODO: XDIMS/YDIMS from terrain_map
     # TODO: tile size to 32?
     # TODO: add terrain to TileMap
     # TODO: add colors for terrain to Settings
@@ -249,8 +278,7 @@ if __name__ == "__main__":
     from pprint import pprint
 
     nmap = NeighborMap(3, 3)
-    pprint(nmap.cardinal)
-    pprint(nmap.diagonal)
+    pprint(nmap.neighbors)
 
     # print(f"-- Cardinal Neighbors --")
     # for tid in range(9):
@@ -258,3 +286,4 @@ if __name__ == "__main__":
     #     cn = NeighborMap.cardinal_neighbors(tid, 3, 3)
     #     for nid in cn:
     #         print(f" NID: {nid}")
+            

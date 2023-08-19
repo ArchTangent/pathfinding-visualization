@@ -1,7 +1,51 @@
 """Terrain, movement costs, and movement types for 2D pathfinding."""
 import json
 from enum import IntEnum, IntFlag
-from typing import Dict
+from typing import Dict, List
+
+
+class MovementType(IntEnum):
+    """Defines the terrain in which an Actor can move."""
+
+    TERRESTRIAL = 1
+    SUBTERRANEAN = 2
+    AMPHIBIOUS = 3
+    DEEP_AMPHIBIOUS = 4
+    AQUATIC = 5
+    AERIAL = 6
+
+    def to_index(self) -> int:
+        """Converts terrain to index form for movement classes."""
+        match self:
+            case MovementType.TERRESTRIAL:
+                return 0
+            case MovementType.SUBTERRANEAN:
+                return 1
+            case MovementType.AMPHIBIOUS:
+                return 2
+            case MovementType.DEEP_AMPHIBIOUS:
+                return 3
+            case MovementType.AQUATIC:
+                return 4
+            case MovementType.AERIAL:
+                return 5
+
+    @staticmethod
+    def from_string(s: str):
+        if s == "terrestrial":
+            return MovementType.TERRESTRIAL
+        if s == "subterranean":
+            return MovementType.SUBTERRANEAN
+        if s == "amphibious":
+            return MovementType.AMPHIBIOUS
+        if s == "deep_amphibious":
+            return MovementType.DEEP_AMPHIBIOUS
+        if s == "aquatic":
+            return MovementType.AQUATIC
+        if s == "aerial":
+            return MovementType.AERIAL
+
+        raise ValueError("Invalid string representation of MovementType!")
 
 
 class Terrain(IntFlag):
@@ -58,48 +102,49 @@ class Terrain(IntFlag):
         raise ValueError("Invalid string representation of Terrain!")
 
 
-class MovementType(IntEnum):
-    """Defines the terrain in which an Actor can move."""
+class TerrainData:
+    """Terrain for a pathing map."""
 
-    TERRESTRIAL = 1
-    SUBTERRANEAN = 2
-    AMPHIBIOUS = 3
-    DEEP_AMPHIBIOUS = 4
-    AQUATIC = 5
-    AERIAL = 6
-
-    def to_index(self) -> int:
-        """Converts terrain to index form for movement classes."""
-        match self:
-            case MovementType.TERRESTRIAL:
-                return 0
-            case MovementType.SUBTERRANEAN:
-                return 1
-            case MovementType.AMPHIBIOUS:
-                return 2
-            case MovementType.DEEP_AMPHIBIOUS:
-                return 3
-            case MovementType.AQUATIC:
-                return 4
-            case MovementType.AERIAL:
-                return 5
+    def __init__(self, terrain_data: List[Terrain]) -> None:
+        self.terrain = [t for t in terrain_data]
 
     @staticmethod
-    def from_string(s: str):
-        if s == "terrestrial":
-            return MovementType.TERRESTRIAL
-        if s == "subterranean":
-            return MovementType.SUBTERRANEAN
-        if s == "amphibious":
-            return MovementType.AMPHIBIOUS
-        if s == "deep_amphibious":
-            return MovementType.DEEP_AMPHIBIOUS
-        if s == "aquatic":
-            return MovementType.AQUATIC
-        if s == "aerial":
-            return MovementType.AERIAL
+    def from_map_data(terrain_map: List[str]):
+        """Creates `TerrainData` from list of strings.
 
-        raise ValueError("Invalid string representation of MovementType!")
+        Example input:
+        ```
+        terrain_map = [
+            "LLLSDSLL",
+            "LLLSDSLL",
+            "LLSSDSLL",
+            "LSDDDSLL",
+            "LSDSSLLL",
+            "LSDSLLLL"
+        ]
+        ```
+        """
+        terrain_data = []
+
+        for str_row in terrain_map:
+            for terrain_char in str_row:
+                match terrain_char:
+                    case "L":
+                        t = Terrain.LOW
+                    case "M":
+                        t = Terrain.MEDIUM
+                    case "H":
+                        t = Terrain.HIGH
+                    case "S":
+                        t = Terrain.SHALLOW
+                    case "D":
+                        t = Terrain.DEEP
+                    case _:
+                        raise ValueError("Invalid Terrain character in terrain map!")
+
+                terrain_data.append(t)
+
+        return TerrainData(terrain_data)
 
 
 class PathContext:
@@ -111,7 +156,7 @@ class PathContext:
     def __init__(self, context: Dict) -> None:
         self.inner = context
 
-    def __getitem__(self, key: Terrain) -> Terrain:
+    def __getitem__(self, key: int) -> Terrain:
         return self.inner[key]
 
     @staticmethod
@@ -143,6 +188,12 @@ class PathContexts:
 
     def __getitem__(self, key: MovementType) -> PathContext:
         return self.inner[key]
+
+    def __iter__(self):
+        return self.inner.__iter__()
+
+    def items(self):
+        return self.inner.items()
 
     @staticmethod
     def from_json_file(fp: str):
@@ -202,6 +253,6 @@ if __name__ == "__main__":
     from pprint import pprint
 
     contexts = PathContexts.from_json_file("gamedata/contexts.json")
-    for mvtype, pcontext in contexts.inner.items():
+    for mvtype, pcontext in contexts.items():
         pprint(mvtype)
         pprint(pcontext.inner)

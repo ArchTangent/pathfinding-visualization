@@ -71,6 +71,11 @@ class Settings:
         self.structure_trim_color = Color(structure_trim_color)
 
 
+def in_bounds(x: int, y: int, xdims: int, ydims: int) -> bool:
+    """Returns `True` if tile is in bounds."""
+    return x >= 0 and x < xdims and y >= 0 and y < ydims
+
+
 def to_tile_id(x: int, y: int, xdims: int):
     """Takes 2D tile (x,y) coordinates and converts them into a tile ID.
 

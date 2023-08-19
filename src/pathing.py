@@ -1,17 +1,46 @@
 """Pathfinding using pathing maps."""
 import pygame
-from helpers import Coords, Obstacles, Settings
-from movement import MovementType, PathContext, Terrain
+from helpers import Coords, Obstacles, Settings, in_bounds, to_tile_id
+from movement import MovementType, PathContext, PathContexts, Terrain
 from pygame import Color
 from pygame.freetype import Font
 from tile_map import TileMap
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
+
+
+class NeighborMap:
+    """Holds tile IDs of neighbors for each tile in a map."""
+
+    def __init__(self, xdims: int, ydims: int) -> None:
+        self.cardinal = {}
+        self.diagonal = {}
+        tid = 0
+
+        for y in range(ydims):
+            for x in range(xdims):
+                ncard = []
+                ndiag = []
+
+                for (nx, ny) in ((x, y-1), (x-1, y), (x+1, y), (x, y+1)):
+                    if in_bounds(nx, ny, xdims, ydims):
+                        nid = to_tile_id(nx, ny, xdims)
+                        ncard.append(nid)
+
+                for (nx, ny) in ((x-1,y-1), (x+1,y-1), (x-1,y+1), (x+1,y+1)):
+                    if in_bounds(nx, ny, xdims, ydims):
+                        nid = to_tile_id(nx, ny, xdims)
+                        ndiag.append(nid)
+
+                self.cardinal[tid] = ncard
+                self.diagonal[tid] = ndiag
+
+                tid += 1
 
 
 class PathMaps:
     """Holds a PathMap for each movement type."""
 
-    def __init__(self) -> None:
+    def __init__(self, movement_type: MovementType) -> None:
         # TODO: create pathing contexts, and PathMap for each
         pass
 
@@ -24,11 +53,12 @@ class PathMap:
 
     def __init__(
         self,
+        context: PathContext,
         terrain_data: Dict[Tuple[int, int], Terrain],
         blockers: Dict[Tuple[int, int], Obstacles],
         settings: Settings,
     ) -> None:
-        self.tiles = []
+        self.tiles: List[PathTile] = []
         self.xdims = settings.xdims
         self.ydims = settings.ydims
 
@@ -41,6 +71,8 @@ class PathMap:
 
         # TODO: set valid neighbors for each tile
         # Set valid neighbors
+        # for tile in self.tiles:
+        #     tile.set_neighbors_cardinal(pathmap, context)
 
     def in_bounds(self, x: int, y: int) -> bool:
         return x > 0 and x < self.xdims and y > 0 and y < self.ydims
@@ -108,6 +140,50 @@ class PathTile:
         # TODO: check all in-bounds neighbors for valid src->tgt pahting context
 
 
+
+
+
+#   ########  ########   ######   ########
+#      ##     ##        ##           ##
+#      ##     ######     ######      ##
+#      ##     ##              ##     ##
+#      ##     ########  #######      ##
+
+
+def test_neighbors_in_bounds():
+    """Ensures NeighborMap correctly gets in-bounds tiles."""
+    xdims = 3
+    ydims = 3
+
+    expected_cardinal = {
+        0: [1, 3],
+        1: [0, 2, 4],
+        2: [1, 5],
+        3: [0, 4, 6],
+        4: [1, 3, 5, 7],
+        5: [2, 4, 8],
+        6: [3, 7],
+        7: [4, 6, 8],
+        8: [5, 7],
+    }
+    expected_diagonal = {
+        0: [4],
+        1: [3, 5],
+        2: [4],
+        3: [1, 7],
+        4: [0, 2, 6, 8],
+        5: [1, 7],
+        6: [4],
+        7: [3, 5],
+        8: [4],
+    }
+
+    actual = NeighborMap(xdims, ydims)
+
+    assert actual.cardinal == expected_cardinal
+    assert actual.diagonal == expected_diagonal
+
+
 #   ##    ##     ##     ########  ##    ##
 #   ###  ###   ##  ##      ##     ####  ##
 #   ## ## ##  ##    ##     ##     ## ## ##
@@ -149,3 +225,9 @@ if __name__ == "__main__":
     # TODO: add colors for terrain to Settings
     # TODO: update draw_tile() for terrain
     # TODO: build and draw TileMap
+
+    from pprint import pprint
+
+    nmap = NeighborMap(3, 3)
+    pprint(nmap.cardinal)
+    pprint(nmap.diagonal)

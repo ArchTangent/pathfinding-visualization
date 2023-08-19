@@ -16,25 +16,48 @@ class NeighborMap:
         self.diagonal = {}
         tid = 0
 
-        for y in range(ydims):
-            for x in range(xdims):
-                ncard = []
-                ndiag = []
+        for tid in range(ydims * xdims):
+            ncard, ndiag = NeighborMap.neighbors(tid, xdims, ydims)
+            self.cardinal[tid] = ncard
+            self.diagonal[tid] = ndiag
 
-                for (nx, ny) in ((x, y-1), (x-1, y), (x+1, y), (x, y+1)):
-                    if in_bounds(nx, ny, xdims, ydims):
-                        nid = to_tile_id(nx, ny, xdims)
-                        ncard.append(nid)
+    @staticmethod
+    def neighbors(tid: int, xdims: int, ydims: int) -> Tuple[List[int], List[int]]:
+        """Returns cardinal and diagonal neighbors to tile with ID `tid`."""
+        div = tid % xdims
+        n = tid - xdims
+        w = tid - 1
+        e = tid + 1
+        s = tid + xdims
+        nw = tid - xdims - 1
+        ne = tid - xdims + 1
+        sw = tid + xdims - 1
+        se = tid + xdims + 1
 
-                for (nx, ny) in ((x-1,y-1), (x+1,y-1), (x-1,y+1), (x+1,y+1)):
-                    if in_bounds(nx, ny, xdims, ydims):
-                        nid = to_tile_id(nx, ny, xdims)
-                        ndiag.append(nid)
+        # X: left edge, right edge, or neither
+        if div == 0:
+            w = None
+            nw = None
+            sw = None
+        elif div == xdims - 1:
+            e = None
+            ne = None
+            se = None
 
-                self.cardinal[tid] = ncard
-                self.diagonal[tid] = ndiag
+        # Y: top edge, bottom edge, or neither
+        if tid < xdims:
+            n = None
+            nw = None
+            ne = None
+        elif tid >= xdims * ydims - xdims:
+            s = None
+            sw = None
+            se = None
 
-                tid += 1
+        cardinal = [nb for nb in (n, w, e, s) if nb is not None]
+        diagonal = [nb for nb in (nw, ne, sw, se) if nb is not None]
+
+        return cardinal, diagonal
 
 
 class PathMaps:
@@ -140,9 +163,6 @@ class PathTile:
         # TODO: check all in-bounds neighbors for valid src->tgt pahting context
 
 
-
-
-
 #   ########  ########   ######   ########
 #      ##     ##        ##           ##
 #      ##     ######     ######      ##
@@ -231,3 +251,10 @@ if __name__ == "__main__":
     nmap = NeighborMap(3, 3)
     pprint(nmap.cardinal)
     pprint(nmap.diagonal)
+
+    # print(f"-- Cardinal Neighbors --")
+    # for tid in range(9):
+    #     print(f"TID: {tid}")
+    #     cn = NeighborMap.cardinal_neighbors(tid, 3, 3)
+    #     for nid in cn:
+    #         print(f" NID: {nid}")

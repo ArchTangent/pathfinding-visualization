@@ -95,7 +95,7 @@ class PathMap:
 
     def __init__(
         self,
-        terrain_data: Dict[Tuple[int, int], Terrain],
+        terrain_data: TerrainData,
         blockers: Dict[Tuple[int, int], Obstacles],
         neighbors: NeighborMap,
         context: PathContext,
@@ -108,7 +108,7 @@ class PathMap:
         # Populate PathTiles with Terrain
         for y in range(settings.ydims):
             for x in range(settings.xdims):
-                terrain = terrain_data.get((x, y), Terrain.LOW)
+                terrain = terrain_data[(x,y)]
                 obstacles = blockers.get((x, y), Obstacles())
                 tile = PathTile(terrain, obstacles)
                 self.tiles.append(tile)
@@ -232,6 +232,25 @@ class PathTile:
         return context[src_terrain] & tgt_terrain > 0
 
 
+#    ######      ##     ##         ######
+#   ##    ##   ##  ##   ##        ##    ##
+#   ##        ##    ##  ##        ##
+#   ##    ##  ########  ##        ##    ##
+#    ######   ##    ##  ########   ######
+#     
+
+def shortest_path(pathmap: PathMap) -> Optional[List]:
+    """Returns tiles and cost along shortest path from source to target tile.
+    
+    If no valid path to target, returns `None`.
+
+    Uses the `PathMap` assigned to the Actor that is moving. This is based on the 
+    Actor's movement class (terrestrial, amphibious, etc..
+    """
+    # TODO: finish
+    # TODO: add features
+    # TODO: climbing over low and high walls (ht 1 and 2)
+
 #   ##    ##     ##     ########  ##    ##
 #   ###  ###   ##  ##      ##     ####  ##
 #   ## ## ##  ##    ##     ##     ## ## ##
@@ -260,7 +279,7 @@ if __name__ == "__main__":
         "LSDSLLLL"
     ]
 
-    terrain_data = TerrainData.from_map_data(terrain_map)
+    terrain_data = TerrainData.from_map_data(terrain_map, settings)
 
     obstacle_data: Dict[Tuple[int, int], Obstacles] = {
         (3, 0): Obstacles(structure=2),

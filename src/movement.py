@@ -1,7 +1,8 @@
 """Terrain, movement costs, and movement types for 2D pathfinding."""
 import json
 from enum import IntEnum, IntFlag
-from typing import Dict, List
+from helpers import Settings
+from typing import Dict, List, Tuple
 
 
 class MovementType(IntEnum):
@@ -105,11 +106,14 @@ class Terrain(IntFlag):
 class TerrainData:
     """Terrain for a pathing map."""
 
-    def __init__(self, terrain_data: List[Terrain]) -> None:
-        self.terrain = [t for t in terrain_data]
+    def __init__(self, terrain_data: Dict[Tuple[int, int], Terrain]) -> None:
+        self.inner = {coords: t for coords, t in terrain_data.items()}
+
+    def __getitem__(self, key: Tuple[int, int]):
+        return self.inner[key]
 
     @staticmethod
-    def from_map_data(terrain_map: List[str]):
+    def from_map_data(terrain_map: List[str], settings: Settings):
         """Creates `TerrainData` from list of strings.
 
         Example input:
@@ -124,10 +128,17 @@ class TerrainData:
         ]
         ```
         """
-        terrain_data = []
+        terrain_data = {}
+        xdims, ydims = settings.xdims, settings.ydims
 
-        for str_row in terrain_map:
-            for terrain_char in str_row:
+        if len(terrain_map) != ydims:
+            raise ValueError("Terrain map Y dimensions don't match settings!")
+
+        for y, str_row in enumerate(terrain_map):
+            if len(str_row) != xdims:
+                raise ValueError("Terrain map X dimensions don't match settings!")
+
+            for x, terrain_char in enumerate(str_row):
                 match terrain_char:
                     case "L":
                         t = Terrain.LOW
@@ -142,7 +153,7 @@ class TerrainData:
                     case _:
                         raise ValueError("Invalid Terrain character in terrain map!")
 
-                terrain_data.append(t)
+                terrain_data[(x, y)] = t
 
         return TerrainData(terrain_data)
 

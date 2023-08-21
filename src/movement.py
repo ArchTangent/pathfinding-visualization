@@ -225,7 +225,7 @@ class PathContexts:
             contexts[move_type] = PathContext.from_dict(ctx_data)
 
         return PathContexts(contexts)
-
+    
 
 #   ########  ########   ######   ########
 #      ##     ##        ##           ##

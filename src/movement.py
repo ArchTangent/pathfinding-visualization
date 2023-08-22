@@ -8,15 +8,15 @@ from typing import Dict, List, Tuple
 class MovementType(IntEnum):
     """Defines the terrain in which an Actor can move."""
 
-    TERRESTRIAL = 1
-    SUBTERRANEAN = 2
-    AMPHIBIOUS = 3
-    DEEP_AMPHIBIOUS = 4
-    AQUATIC = 5
-    AERIAL = 6
+    TERRESTRIAL = 0
+    SUBTERRANEAN = 1
+    AMPHIBIOUS = 2
+    DEEP_AMPHIBIOUS = 3
+    AQUATIC = 4
+    AERIAL = 5
 
     def to_index(self) -> int:
-        """Converts terrain to index form for movement classes."""
+        """Converts movement type to index form."""
         match self:
             case MovementType.TERRESTRIAL:
                 return 0
@@ -31,8 +31,25 @@ class MovementType(IntEnum):
             case MovementType.AERIAL:
                 return 5
 
+    def to_string(self) -> str:
+        """Converts string to movement type."""
+        match self:
+            case MovementType.TERRESTRIAL:
+                return "TERRESTRIAL"
+            case MovementType.SUBTERRANEAN:
+                return "SUBTERRANEAN"
+            case MovementType.AMPHIBIOUS:
+                return "AMPHIBIOUS"
+            case MovementType.DEEP_AMPHIBIOUS:
+                return "DEEP_AMPHIBIOUS"
+            case MovementType.AQUATIC:
+                return "AQUATIC"
+            case MovementType.AERIAL:
+                return "AERIAL"
+
     @staticmethod
     def from_string(s: str):
+        """Converts string to movement type."""
         if s == "terrestrial":
             return MovementType.TERRESTRIAL
         if s == "subterranean":
@@ -52,6 +69,7 @@ class MovementType(IntEnum):
 class Terrain(IntFlag):
     """Base terrain. Fundamental structure for pathfinding."""
 
+    EMPTY = 0  # No terrain
     UNDERGROUND = 1  # Under solid ground or shallows
     UNDERWATER = 2  # Under deep water
     DEEP = 4  # Surface of deep water
@@ -62,27 +80,52 @@ class Terrain(IntFlag):
     AIR = 128  # Above ground or over a chasm
 
     def to_index(self) -> int:
-        """Converts terrain to index form for movement classes."""
+        """Converts terrain to index form."""
         match self:
-            case Terrain.UNDERGROUND:
+            case Terrain.EMPTY:
                 return 0
-            case Terrain.UNDERWATER:
+            case Terrain.UNDERGROUND:
                 return 1
-            case Terrain.DEEP:
+            case Terrain.UNDERWATER:
                 return 2
-            case Terrain.SHALLOW:
+            case Terrain.DEEP:
                 return 3
-            case Terrain.LOW:
+            case Terrain.SHALLOW:
                 return 4
-            case Terrain.MEDIUM:
+            case Terrain.LOW:
                 return 5
-            case Terrain.HIGH:
+            case Terrain.MEDIUM:
                 return 6
-            case Terrain.AIR:
+            case Terrain.HIGH:
                 return 7
+            case Terrain.AIR:
+                return 8
+
+    def to_string(self) -> str:
+        """Converts terrain to string."""
+        match self:
+            case Terrain.EMPTY:
+                return "EMPTY"
+            case Terrain.UNDERGROUND:
+                return "UNDERGROUND"
+            case Terrain.UNDERWATER:
+                return "WATER"
+            case Terrain.DEEP:
+                return "DEEP"
+            case Terrain.SHALLOW:
+                return "SHALLOW"
+            case Terrain.LOW:
+                return "LOW"
+            case Terrain.MEDIUM:
+                return "MEDIUM"
+            case Terrain.HIGH:
+                return "HIGH"
+            case Terrain.AIR:
+                return "AIR"
 
     @staticmethod
     def from_string(s: str):
+        """Converts string to terrain."""
         if s == "underground":
             return Terrain.UNDERGROUND
         if s == "underwater":
@@ -116,7 +159,7 @@ class TerrainData:
     def from_map_data(terrain_map: List[str], settings: Settings):
         """Creates `TerrainData` from list of strings.
 
-        Example input:
+        Example input (8x6):
         ```
         terrain_map = [
             "LLLSDSLL",
@@ -164,10 +207,12 @@ class PathContext:
     `PathContext = { source_terrain_bits: target_terrain_bits }`
     """
 
-    def __init__(self, context: Dict) -> None:
-        self.inner = context
+    def __init__(self, context: Dict[Terrain, Terrain]) -> None:
+        self.inner = {t: Terrain.EMPTY for t in Terrain}
+        for src, tgt in context.items():
+            self.inner[src] = tgt
 
-    def __getitem__(self, key: int) -> Terrain:
+    def __getitem__(self, key: Terrain) -> Terrain:
         return self.inner[key]
 
     @staticmethod
@@ -194,14 +239,14 @@ class PathContexts:
     To get valid target terrain for a terrain, use: `PathContexts[MovementType][Terrain]`
     """
 
-    def __init__(self, contexts: Dict) -> None:
+    def __init__(self, contexts: Dict[MovementType, PathContext]) -> None:
         self.inner = contexts
 
-    def __getitem__(self, key: MovementType) -> PathContext:
-        return self.inner[key]
+    def context(self, mvtype: MovementType) -> PathContext:
+        return self.inner[mvtype]
 
-    def __iter__(self):
-        return self.inner.__iter__()
+    def values(self):
+        return self.inner.values()
 
     def items(self):
         return self.inner.items()
@@ -225,7 +270,7 @@ class PathContexts:
             contexts[move_type] = PathContext.from_dict(ctx_data)
 
         return PathContexts(contexts)
-    
+
 
 #   ########  ########   ######   ########
 #      ##     ##        ##           ##
@@ -267,3 +312,8 @@ if __name__ == "__main__":
     for mvtype, pcontext in contexts.items():
         pprint(mvtype)
         pprint(pcontext.inner)
+
+    testy = [1, 2, 4, 8]
+    for t in testy:
+        terr = Terrain(t)
+        pprint(terr)

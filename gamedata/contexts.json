@@ -3,7 +3,7 @@
         "low": ["low", "medium", "high"],
         "medium": ["low", "medium", "high"],
         "high": ["low", "medium", "high"],
-        "shallow": ["low", "medium", "high", "shallow"],
+        "shallow": ["low", "medium", "high"],
         "deep": ["shallow"]
     },
     "subterranean": {

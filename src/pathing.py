@@ -1,11 +1,8 @@
 """Pathfinding using pathing maps."""
 import pygame
-from collections import deque
-from helpers import Coords, Obstacles, Settings, in_bounds, to_tile_id
+from helpers import Colors, Coords, Obstacles, Settings
 from movement import MovementType, PathContext, PathContexts, Terrain, TerrainData
-from pygame import Color
 from pygame.freetype import Font
-from tile_map import TileMap
 from typing import Dict, List, Optional, Self, Tuple
 
 
@@ -107,7 +104,7 @@ class PathTile:
 
     def __init__(self, terrain: Terrain, obstacles: Obstacles) -> None:
         """Create a new instance."""
-        self.terrain: int = terrain.value
+        self.terrain: Terrain = terrain
         self.structure = obstacles.structure
         self.wall_n = obstacles.wall_n
         self.wall_w = obstacles.wall_w
@@ -145,18 +142,22 @@ class PathTile:
             case Terrain.AIR:
                 raise ValueError("AIR is an invalid base terrain!")
 
-    def has_valid_neighbor(
-        self, tiles: List[Self], nid: int, context: PathContext
-    ) -> bool:
-        """Returns `True` if tile at ID `nid` is a valid neighbor.
-
-        Neighbor is valid if  target terrain is a valid destination for source
-        terrain (by context).
-        """
-        src_terrain = self.terrain
-        tgt_terrain = tiles[nid].terrain
-
-        return context[src_terrain] & tgt_terrain > 0
+    def edges(self) -> List[int]:
+        """Returns tile IDs of all valid neighbors of this PathTile."""
+        return [
+            edge
+            for edge in (
+                self.NW,
+                self.NE,
+                self.SW,
+                self.SE,
+                self.N,
+                self.W,
+                self.E,
+                self.S,
+            )
+            if edge
+        ]
 
     def has_valid_neighbor_n(self, tgt: Self, context: PathContext) -> bool:
         """Returns `True` if target tile is a valid neighbor to the North.
@@ -314,12 +315,15 @@ class PathMap:
 
     def __init__(
         self,
+        movement_type: MovementType,
         terrain_data: TerrainData,
-        blockers: Dict[Tuple[int, int], Obstacles],
+        obstacle_data: Dict[Tuple[int, int], Obstacles],
         neighbors: NeighborMap,
-        ctx: PathContext,
+        context: PathContext,
         settings: Settings,
     ) -> None:
+        self.movement_type = movement_type
+        self.movement_type_str = movement_type.to_string()
         self.tiles: List[PathTile] = []
         self.xdims = settings.xdims
         self.ydims = settings.ydims
@@ -327,11 +331,11 @@ class PathMap:
         for y in range(settings.ydims):
             for x in range(settings.xdims):
                 terrain = terrain_data[(x, y)]
-                obstacles = blockers.get((x, y), Obstacles())
+                obstacles = obstacle_data.get((x, y), Obstacles())
                 tile = PathTile(terrain, obstacles)
                 self.tiles.append(tile)
 
-        self.set_valid_neighbors(neighbors, ctx)
+        self.set_valid_neighbors(neighbors, context)
 
     def set_valid_neighbors(self, neighbors: NeighborMap, ctx: PathContext):
         """Sets valid neighbors for each PathTile in the PathMap."""
@@ -357,10 +361,23 @@ class PathMap:
 class PathMaps:
     """Holds a PathMap for each movement type."""
 
-    def __init__(self, contexts: PathContexts) -> None:
-        # TODO: create pathing contexts, and PathMap for each MovementType in PathingContexts
-        # TODO: create pathing contexts, and PathMap for each MovementType in PathingContexts
-        pass
+    def __init__(
+        self,
+        terrain_data: TerrainData,
+        obstacle_data: Dict[Tuple[int, int], Obstacles],
+        contexts: PathContexts,
+        settings: Settings,
+    ) -> None:
+        self.inner = []
+
+        neighbor_map = NeighborMap(settings.xdims, settings.ydims)
+
+        for (move_type, context) in contexts.items():
+            pathmap = PathMap(move_type, terrain_data, obstacle_data, neighbor_map, context, settings)
+            self.inner.append(pathmap)
+
+    def get_map(self, mvtype: MovementType) -> PathMap:
+        return self.inner[mvtype]
 
 
 def get_valid_neighbors(
@@ -430,13 +447,87 @@ def shortest_path(pathmap: PathMap) -> Optional[List]:
     path = []
 
 
-def breadth_first_search(pathmap: PathMap, src: int, tgt: int):
-    """Returns depth where target is first found, or None if not found."""
+def breadth_first_search_depth(pathmap: PathMap, src: int, tgt: int) -> Optional[int]:
+    """Returns depth where target `tgt` is first found, or None if not found.
+
+    Uses a FIFO queue of (node, depth) pairs where nodes to search are pulled
+    from front, and new edges are added to the back.
+    """
     if src == tgt:
         return 0
 
-    # Queue of (node, depth) pairs
-    # to_search = deque([(edge, 1) for edge in pathmap])
+    print(f"[BFS_depth] from {src} to {tgt}")
+
+    curr = []
+    next = []
+
+    seen = {src}
+    depth = 1
+
+    for edge in pathmap.tile(src).edges():
+        curr.append(edge)
+        seen.add(edge)
+
+    while curr:
+        while curr:
+            node = curr.pop()
+
+            if node == tgt:
+                return depth
+
+            for edge in pathmap.tile(node).edges():
+                if edge not in seen:
+                    next.append(edge)
+                    seen.add(edge)
+
+        depth += 1
+        curr, next = next, curr
+
+    return None
+
+
+def breadth_first_search(pathmap: PathMap, src: int, tgt: int) -> Optional[List[int]]:
+    """Returns path of TIDs along an unweighted breadth first search, or None if not found.
+
+    Uses a FIFO queue of (node, depth) pairs where nodes to search are pulled
+    from front, and new edges are added to the back.
+    """
+    if src == tgt:
+        return [0]
+
+    print(f"[BFS_path] from {src} to {tgt}")
+
+    seen: Dict[int, Optional[int]] = {src: None}
+    curr = []
+    next = []
+    path = []
+
+    for edge in pathmap.tile(src).edges():
+        curr.append(edge)
+        seen[edge] = src
+
+    while curr:
+        while curr:
+            node = curr.pop()
+
+            if node == tgt:
+                to_node = node
+                while to_node:
+                    from_node = seen[to_node]
+                    path.append(to_node)
+                    to_node = from_node
+
+                path.append(src)
+                return path
+
+            for edge in pathmap.tile(node).edges():
+                if edge not in seen:
+                    next.append(edge)
+                    seen[edge] = node
+        
+        curr, next = next, curr
+
+    return None
 
 
 #   ##    ##     ##     ########  ##    ##
@@ -450,17 +541,19 @@ if __name__ == "__main__":
 
     pygame.freetype.init()  # type: ignore
 
+    colors = Colors()
+
     settings = Settings(
         1280,
         720,
-        Coords(8, 5),
+        Coords(8, 6),
         Font(None, size=16),
-        Color("snow"),
+        colors
     )
 
     terrain_map = [
         "LLLSDSLL",
-        "LLLSDSLL",
+        "LLLSSSLL",
         "LLSSDSLL",
         "LSDDDSLL",
         "LSDSSLLL",
@@ -470,26 +563,31 @@ if __name__ == "__main__":
     terrain_data = TerrainData.from_map_data(terrain_map, settings)
 
     obstacle_data: Dict[Tuple[int, int], Obstacles] = {
-        (3, 0): Obstacles(structure=2),
+        # (3, 0): Obstacles(structure=2),
     }
 
-    tilemap = TileMap(obstacle_data, settings)
+    contexts = PathContexts.from_json_file("gamedata/contexts.json")
 
-    # TODO: XDIMS/YDIMS from terrain_map
     # TODO: tile size to 32?
-    # TODO: add terrain to TileMap
-    # TODO: add colors for terrain to Settings
     # TODO: update draw_tile() for terrain
-    # TODO: build and draw TileMap
+    # TODO: build and draw PathMap
 
-    from pprint import pprint
+    pathmaps = PathMaps(terrain_data, obstacle_data, contexts, settings)
+    src = 0
+    tgt = 47
+    print(f"--- BFS ---")
+    mvtype = MovementType.DEEP_AMPHIBIOUS
+    pathmap = pathmaps.get_map(mvtype)
+    bfs = breadth_first_search_depth(pathmap, src, tgt)
+    bfs_p = breadth_first_search(pathmap, src, tgt)
+    print(f"from {src} to {tgt} for {mvtype.to_string()}:")
+    print(f"  bfs: {bfs}")
+    print(f"  bfs_path: {bfs_p}")
 
-    nmap = NeighborMap(3, 3)
-    pprint(nmap.neighbors)
-
-    # print(f"-- Cardinal Neighbors --")
-    # for tid in range(9):
-    #     print(f"TID: {tid}")
-    #     cn = NeighborMap.cardinal_neighbors(tid, 3, 3)
-    #     for nid in cn:
-    #         print(f" NID: {nid}")
+    mvtype = MovementType.AMPHIBIOUS
+    pathmap = pathmaps.get_map(mvtype)
+    bfs = breadth_first_search_depth(pathmap, src, tgt)
+    bfs_p = breadth_first_search(pathmap, src, tgt)
+    print(f"from {src} to {tgt} for {mvtype.to_string()}:")
+    print(f"  bfs: {bfs}")
+    print(f"  bfs_path: {bfs_p}")

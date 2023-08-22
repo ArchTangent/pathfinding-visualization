@@ -36,6 +36,58 @@ class Coords:
         return (self.x, self.y)
 
 
+class Colors:
+    """Defines colors for pathfinding visualization."""
+
+    def __init__(
+        self,
+        font_normal="snow",
+        font_reserve="yellow2",
+        font_over="tomato2",
+        floor="steelblue2",
+        floor_trim="steelblue4",
+        fov_line="deepskyblue1",
+        wall="slategray2",
+        wall_trim="slategray3",
+        structure="slategray2",
+        structure_trim="slategray3",
+        # wall="seagreen3",
+        # wall_trim="seagreen4",
+        # structure="seagreen3",
+        # structure_trim="seagreen4",
+        underground="chocolate4",
+        underwater="midnightblue",
+        deep="blue2",
+        shallow="deepskyblue1",
+        low="seagreen2",
+        medium="seagreen3",
+        high="seagreen4",
+        air="slategray1",
+    ) -> None:
+        # --- Fonts --- #
+        self.font_normal = Color(font_normal)
+        self.font_reserve = Color(font_reserve)
+        self.font_over = Color(font_over)
+        # --- Tiles --- #
+        self.floor = Color(floor)
+        self.floor_trim = Color(floor_trim)
+        self.fov_line = Color(fov_line)
+        self.wall = Color(wall)
+        self.wall_trim = Color(wall_trim)
+        self.structure = Color(structure)
+        self.structure_trim = Color(structure_trim)
+
+        # --- Terrain --- #
+        self.underground = Color(underground)
+        self.underwater = Color(underwater)
+        self.deep = Color(deep)
+        self.shallow = Color(shallow)
+        self.low = Color(low)
+        self.medium = Color(medium)
+        self.high = Color(high)
+        self.air = Color(air)
+
+
 class Settings:
     """Settings for Pathfinding and pygame."""
 
@@ -45,14 +97,7 @@ class Settings:
         height: int,
         map_dims: Coords,
         font: Font,
-        font_color: Color,
-        floor_color="steelblue2",
-        floor_trim_color="steelblue4",
-        fov_line_color="deepskyblue1",
-        wall_color="seagreen3",
-        wall_trim_color="seagreen4",
-        structure_color="seagreen3",
-        structure_trim_color="seagreen4",
+        colors: Colors,
     ) -> None:
         if map_dims.x < 1 or map_dims.y < 1:
             raise ValueError("all map dimensions must be > 0!")
@@ -61,14 +106,7 @@ class Settings:
         self.height = height
         self.xdims, self.ydims = map_dims
         self.font = font
-        self.font_color = font_color
-        self.floor_color = Color(floor_color)
-        self.fov_line_color = fov_line_color
-        self.floor_trim_color = Color(floor_trim_color)
-        self.wall_color = Color(wall_color)
-        self.wall_trim_color = Color(wall_trim_color)
-        self.structure_color = Color(structure_color)
-        self.structure_trim_color = Color(structure_trim_color)
+        self.colors = colors
 
 
 def in_bounds(x: int, y: int, xdims: int, ydims: int) -> bool:

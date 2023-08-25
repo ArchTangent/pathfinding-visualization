@@ -1,31 +1,10 @@
 """Pathfinding using pathing maps."""
 import pygame
-from enum import Enum
 from heapq import heappush, heappop
 from helpers import Colors, Coords, Obstacles, Settings
 from movement import MovementType, PathContext, PathContexts, Terrain, TerrainData
 from pygame.freetype import Font
 from typing import Dict, List, Optional, Self, Tuple
-
-class NodeType(Enum):
-    """Defines a pathfinding node as a tile or North/West wall."""
-    TILE = 1
-    N_WALL = 2
-    W_WALL = 3
-
-
-class LocationMap:
-    """Converts `(x, y, node_type)` location to tile ID in a `PathMap`."""
-    def __init__(self) -> None:
-        self.inner: Dict[Tuple[int, int, NodeType], int] = {}
-
-    def insert(self, x: int, y: int, node_type: NodeType, tid: int):
-        """Inserts new {k:v} pair into the map."""
-        self.inner[(x,y,node_type)] = tid
-    
-    def get(self, x: int, y: int, node_type: NodeType) -> Optional[int]:
-        """Returns tile ID at given location and node type, or None is not present."""
-        return self.inner.get((x,y,node_type))
 
 
 class Neighbors:
@@ -367,14 +346,7 @@ class PathTile:
 
 
 class PathMap:
-    """Holds `PathTile` instances for a given movement type.
-    
-    Initialization:
-    1. Insert North wall, West wall, or tile `PathTile` for each `(x,y)` into `tiles`. 
-    North node type goes before West, and West before tile.
-    2. Update `LocationMap` with `{(x, y, node_type): TID}` pairs.
-    3. Insert valid neighbors into each `PathTile`.
-    """
+    """Holds PathTiles for a given movement type."""
 
     def __init__(
         self,
@@ -391,7 +363,6 @@ class PathMap:
         self.xdims = settings.xdims
         self.ydims = settings.ydims
 
-        tid = 0
         for y in range(settings.ydims):
             for x in range(settings.xdims):
                 terrain = terrain_data[(x, y)]

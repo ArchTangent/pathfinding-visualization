@@ -1,0 +1,205 @@
+{
+    "terrestrial": {
+        "low": {
+            "low": 10,
+            "medium": 15,
+            "high": 20
+        },
+        "medium": {
+            "low": 10,
+            "medium": 15,
+            "high": 20
+        },
+        "high": {
+            "low": 10,
+            "medium": 15,
+            "high": 20
+        },
+        "shallow": {
+            "low": 40,
+            "medium": 60,
+            "high": 80
+        },
+        "deep": {
+            "shallow": 50
+        }
+    },
+    "subterranean": {
+        "low": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "underground": 40
+        },
+        "medium": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "underground": 50
+        },
+        "high": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "underground": 60
+        },
+        "shallow": {
+            "low": 40,
+            "medium": 60,
+            "high": 80
+        },
+        "underground": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "underground": 40
+        }
+    },
+    "amphibious": {
+        "low": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "shallow": 20
+        },
+        "medium": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "shallow": 20
+        },
+        "high": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "shallow": 20
+        },
+        "shallow": {
+            "low": 20,
+            "medium": 30,
+            "high": 40,
+            "shallow": 20
+        },
+        "deep": {
+            "shallow": 40
+        }
+    },
+    "deep_amphibious": {
+        "low": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "shallow": 20,
+            "deep": 20
+        },
+        "medium": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "shallow": 20,
+            "deep": 20
+        },
+        "high": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "shallow": 20,
+            "deep": 20
+        },
+        "shallow": {
+            "low": 20,
+            "medium": 15,
+            "high": 20,
+            "shallow": 25,
+            "deep": 25
+        },
+        "deep": {
+            "low": 10,
+            "medium": 15,
+            "high": 20,
+            "shallow": 25,
+            "deep": 25,
+            "underwater": 30
+        },
+        "underwater": {
+            "deep": 30
+        }
+    },
+    "aquatic": {
+        "low": {
+            "shallow": 40,
+            "deep": 40
+        },
+        "medium": {
+            "shallow": 40,
+            "deep": 40
+        },
+        "high": {
+            "shallow": 40,
+            "deep": 40
+        },
+        "shallow": {
+            "shallow": 10,
+            "deep": 10
+        },
+        "deep": {
+            "shallow": 10,
+            "deep": 10,
+            "underwater": 15
+        },
+        "underwater": {
+            "deep": 15,
+            "underwater": 15
+        }
+    },
+    "aerial": {
+        "low": {
+            "low": 10,
+            "medium": 10,
+            "high": 10,
+            "shallow": 10,
+            "deep": 10,
+            "air": 10 
+        },
+        "medium": {
+            "low": 10,
+            "medium": 10,
+            "high": 10,
+            "shallow": 10,
+            "deep": 10,
+            "air": 10 
+        },
+        "high": {
+            "low": 10,
+            "medium": 10,
+            "high": 10,
+            "shallow": 10,
+            "deep": 10,
+            "air": 10 
+        },
+        "shallow": {
+            "low": 10,
+            "medium": 10,
+            "high": 10,
+            "shallow": 10,
+            "deep": 10,
+            "air": 10 
+        },
+        "deep": {
+            "low": 10,
+            "medium": 10,
+            "high": 10,
+            "shallow": 10,
+            "deep": 10,
+            "air": 10 
+        },
+        "air": {
+            "low": 10,
+            "medium": 10,
+            "high": 10,
+            "shallow": 10,
+            "deep": 10,
+            "air": 10 
+        }
+    }
+}

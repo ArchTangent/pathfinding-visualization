@@ -1,0 +1,9 @@
+{
+    "low_wall": 40,
+    "high_wall": 80,
+    "rough": 15,
+    "loose": 10,
+    "swamp": 20,
+    "weeds": 10,
+    "reef": 20
+}

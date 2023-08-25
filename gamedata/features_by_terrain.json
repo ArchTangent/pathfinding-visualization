@@ -1,0 +1,10 @@
+{
+    "underground": [],
+    "underwater": ["weeds", "reef"],
+    "deep": ["weeds", "reef"],
+    "shallow": ["swamp", "weeds", "reef"],
+    "low": ["low_wall", "high_wall", "rough", "loose", "swamp"],
+    "medium": ["low_wall", "high_wall", "rough", "loose"],
+    "high": ["low_wall", "high_wall", "rough", "loose"],
+    "air": []
+}

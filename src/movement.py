@@ -66,6 +66,80 @@ class MovementType(IntEnum):
         raise ValueError("Invalid string representation of MovementType!")
 
 
+class Features(IntFlag):
+    """Terrain features. Restricted to particular terrain."""
+
+    EMPTY = 0
+    LOW_WALL = 1
+    HIGH_WALL = 2
+    ROUGH = 4
+    LOOSE = 8
+    SWAMP = 16
+    WEEDS = 32
+    REEF = 64
+
+    def to_index(self) -> int:
+        """Converts features to index form."""
+        match self:
+            case Features.EMPTY:
+                return 0
+            case Features.LOW_WALL:
+                return 1
+            case Features.HIGH_WALL:
+                return 2
+            case Features.ROUGH:
+                return 3
+            case Features.LOOSE:
+                return 4
+            case Features.SWAMP:
+                return 5
+            case Features.WEEDS:
+                return 6
+            case Features.REEF:
+                return 7
+
+    def to_string(self) -> str:
+        """Converts features to string."""
+        match self:
+            case Features.EMPTY:
+                return "EMPTY"
+            case Features.LOW_WALL:
+                return "UNDERGROUND"
+            case Features.HIGH_WALL:
+                return "WATER"
+            case Features.ROUGH:
+                return "DEEP"
+            case Features.LOOSE:
+                return "SHALLOW"
+            case Features.SWAMP:
+                return "SWAMP"
+            case Features.WEEDS:
+                return "WEEDS"
+            case Features.REEF:
+                return "REEF"
+
+    @staticmethod
+    def from_string(s: str):
+        """Converts string to Features."""
+        if s == "empty":
+            return Features.EMPTY
+        if s == "underground":
+            return Features.LOW_WALL
+        if s == "underwater":
+            return Features.HIGH_WALL
+        if s == "deep":
+            return Features.ROUGH
+        if s == "shallow":
+            return Features.LOOSE
+        if s == "low":
+            return Features.SWAMP
+        if s == "medium":
+            return Features.WEEDS
+        if s == "high":
+            return Features.REEF
+
+        raise ValueError("Invalid string representation of Features!")
+
 class Terrain(IntFlag):
     """Base terrain. Fundamental structure for pathfinding."""
 

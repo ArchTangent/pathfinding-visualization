@@ -3,12 +3,21 @@ import pygame
 from enum import Enum
 from heapq import heappush, heappop
 from helpers import Colors, Coords, Obstacles, Settings
-from movement import MovementType, PathContext, PathContexts, Terrain, TerrainData
+from movement import (
+    Features,
+    MovementType,
+    PathContext,
+    PathContexts,
+    Terrain,
+    TerrainData,
+)
 from pygame.freetype import Font
 from typing import Dict, List, Optional, Self, Tuple
 
+
 class NodeType(Enum):
     """Defines a pathfinding node as a tile or North/West wall."""
+
     TILE = 1
     N_WALL = 2
     W_WALL = 3
@@ -16,16 +25,32 @@ class NodeType(Enum):
 
 class LocationMap:
     """Converts `(x, y, node_type)` location to tile ID in a `PathMap`."""
+
     def __init__(self) -> None:
         self.inner: Dict[Tuple[int, int, NodeType], int] = {}
 
     def insert(self, x: int, y: int, node_type: NodeType, tid: int):
         """Inserts new {k:v} pair into the map."""
-        self.inner[(x,y,node_type)] = tid
-    
+        self.inner[(x, y, node_type)] = tid
+
     def get(self, x: int, y: int, node_type: NodeType) -> Optional[int]:
         """Returns tile ID at given location and node type, or None is not present."""
-        return self.inner.get((x,y,node_type))
+        return self.inner.get((x, y, node_type))
+
+
+class Neighbor:
+    """Data for tile ID, terrain cost, and terrain features for a Tile neighbor.
+
+    `features` is a bitflag representing zero or more terrain features in the neighbor.
+    """
+
+    def __init__(
+        self, nid: int, terrain_cost: int, feature_cost: int, features: Features
+    ) -> None:
+        self.neighbor_id = nid
+        self.terrain_cost = terrain_cost
+        self.feature_cost = feature_cost
+        self.features = features
 
 
 class Neighbors:
@@ -368,10 +393,11 @@ class PathTile:
 
 class PathMap:
     """Holds `PathTile` instances for a given movement type.
-    
+
     Initialization:
-    1. Insert North wall, West wall, or tile `PathTile` for each `(x,y)` into `tiles`. 
-    North node type goes before West, and West before tile.
+    1. Insert North wall, West wall, or tile `PathTile` for each `(x,y)` into `tiles`.
+    North node type goes before West, and West before tile. Don't add North wall into
+    top row, or West wall into left column (no tiles to connect to).
     2. Update `LocationMap` with `{(x, y, node_type): TID}` pairs.
     3. Insert valid neighbors into each `PathTile`.
     """
@@ -391,12 +417,33 @@ class PathMap:
         self.xdims = settings.xdims
         self.ydims = settings.ydims
 
+        # TODO: Update Neighbors and Neighbor (see scratch paper)
+        # TODO: Remove wall_n and wall_w from PathTile
+        # TODO: finish
+        location_map = LocationMap()
         tid = 0
+
         for y in range(settings.ydims):
             for x in range(settings.xdims):
                 terrain = terrain_data[(x, y)]
                 obstacles = obstacle_data.get((x, y), Obstacles())
+
+                # TODO: new PathTile for Wall N, Wall W, and Tile
+
+                if obstacles.wall_n and y > 0:
+                    location_map.insert(x, y, NodeType.N_WALL, tid)
+                    tile = PathTile(x, y, terrain, obstacles)
+                    tid += 1
+
+                if obstacles.wall_w and x > 0:
+                    location_map.insert(x, y, NodeType.W_WALL, tid)
+                    tile = PathTile(x, y, terrain, obstacles)
+                    tid += 1
+
+                location_map.insert(x, y, NodeType.TILE, tid)
                 tile = PathTile(x, y, terrain, obstacles)
+                tid += 1
+
                 self.tiles.append(tile)
 
         self.set_valid_neighbors(neighbors, context)
@@ -436,8 +483,10 @@ class PathMaps:
 
         neighbor_map = NeighborMap(settings.xdims, settings.ydims)
 
-        for (move_type, context) in contexts.items():
-            pathmap = PathMap(move_type, terrain_data, obstacle_data, neighbor_map, context, settings)
+        for move_type, context in contexts.items():
+            pathmap = PathMap(
+                move_type, terrain_data, obstacle_data, neighbor_map, context, settings
+            )
             self.inner.append(pathmap)
 
     def get_map(self, mvtype: MovementType) -> PathMap:
@@ -564,7 +613,7 @@ def breadth_first_search(pathmap: PathMap, src: int, tgt: int) -> Optional[List[
     seen: Dict[int, Optional[int]] = {src: None}
     curr = []
     next = []
-    
+
     for edge in pathmap.tile(src).edges():
         curr.append(edge)
         seen[edge] = src
@@ -589,7 +638,7 @@ def breadth_first_search(pathmap: PathMap, src: int, tgt: int) -> Optional[List[
                 if edge not in seen:
                     next.append(edge)
                     seen[edge] = node
-        
+
         curr, next = next, curr
 
     return None
@@ -597,7 +646,7 @@ def breadth_first_search(pathmap: PathMap, src: int, tgt: int) -> Optional[List[
 
 def a_star(pathmap: PathMap, src: int, tgt: int) -> Optional[List[Tuple[int, int]]]:
     """A* algorithm returning path and cost from source to target, or None if not found.
-    
+
     Notes:
     - Actual cost (TUs) is used for the real path.
     - Heuristic is abs(dx) + abs(dy) and is only used for priority.
@@ -627,9 +676,9 @@ def a_star(pathmap: PathMap, src: int, tgt: int) -> Optional[List[Tuple[int, int
             while to_id:
                 from_id = origin_of[to_id]
                 path.append((to_id, total_cost[to_id]))
-                to_id = from_id   
+                to_id = from_id
 
-            return path         
+            return path
 
         node = pathmap.tile(node_id)
 
@@ -656,8 +705,8 @@ def a_star(pathmap: PathMap, src: int, tgt: int) -> Optional[List[Tuple[int, int
 # TODO: add features and terrain/feature bonus
 def movement_cost(src: PathTile, tgt: PathTile) -> int:
     """Returns movement cost from source to target tile.
-    
-    Cost is based on movement type, terrain, features, and modifiers. 
+
+    Cost is based on movement type, terrain, features, and modifiers.
     Base cost is based on the target tile only.
     """
 
@@ -675,13 +724,7 @@ if __name__ == "__main__":
 
     colors = Colors()
 
-    settings = Settings(
-        1280,
-        720,
-        Coords(8, 6),
-        Font(None, size=16),
-        colors
-    )
+    settings = Settings(1280, 720, Coords(8, 6), Font(None, size=16), colors)
 
     terrain_map = [
         "LLLSDSLL",

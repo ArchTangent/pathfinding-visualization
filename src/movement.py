@@ -123,22 +123,23 @@ class Features(IntFlag):
         """Converts string to Features."""
         if s == "empty":
             return Features.EMPTY
-        if s == "underground":
+        if s == "low_wall":
             return Features.LOW_WALL
-        if s == "underwater":
+        if s == "high_wall":
             return Features.HIGH_WALL
-        if s == "deep":
+        if s == "rough":
             return Features.ROUGH
-        if s == "shallow":
+        if s == "loose":
             return Features.LOOSE
-        if s == "low":
+        if s == "swamp":
             return Features.SWAMP
-        if s == "medium":
+        if s == "weeds":
             return Features.WEEDS
-        if s == "high":
+        if s == "reef":
             return Features.REEF
 
         raise ValueError("Invalid string representation of Features!")
+
 
 class Terrain(IntFlag):
     """Base terrain. Fundamental structure for pathfinding."""
@@ -346,6 +347,63 @@ class PathContexts:
         return PathContexts(contexts)
 
 
+class MoveCostTable:
+    """Costs for (a) terrain to terrain and (b) tile to feature movement.
+
+    Requirements:
+    - All possible source-target Terrain combinations.
+    - All possible combinations of Features.
+    """
+
+    def __init__(
+        self,
+        terrain_costs: Dict[Tuple[Terrain, Terrain], int],
+        feature_costs: Dict[Features, int],
+    ) -> None:
+        self.by_terrain = terrain_costs
+        self.by_feature = feature_costs
+
+    @staticmethod
+    def from_json_file(folder_path: str):
+        """Deserializes `MoveCostTable` from JSON file at `folder_path`, e.g. `gamedata/`.
+
+        Terrain costs is a {string: {string: {string: int}}} dictionary.
+        """
+        terrain_path = f"{folder_path}terrain_costs.json"
+        feature_path = f"{folder_path}feature_costs.json"
+
+        with open(terrain_path, "r", encoding="utf-8") as f:
+            tdict = json.load(f)
+
+        with open(feature_path, "r", encoding="utf-8") as f:
+            fdict = json.load(f)
+
+        terrain_costs = {}
+        feature_costs = {}
+
+        for move_type_str, cost_data in tdict.items():
+            move_type = MovementType.from_string(move_type_str)
+            depth1 = {}
+
+            for src_terrain_str, tgt_terrain_data in cost_data.items():
+                src_terrain = Terrain.from_string(src_terrain_str)
+                depth2 = {}
+
+                for tgt_terrain_str, cost in tgt_terrain_data.items():
+                    tgt_terrain = Terrain.from_string(tgt_terrain_str)
+                    depth2[tgt_terrain] = cost
+                
+                depth1[src_terrain] = depth2
+
+            terrain_costs[move_type] = depth1
+
+        for feature_str, cost in fdict.items():
+            feature = Features.from_string(feature_str)
+            feature_costs[feature] = cost
+
+        return MoveCostTable(terrain_costs, feature_costs)
+
+
 #   ########  ########   ######   ########
 #      ##     ##        ##           ##
 #      ##     ######     ######      ##
@@ -391,3 +449,9 @@ if __name__ == "__main__":
     for t in testy:
         terr = Terrain(t)
         pprint(terr)
+
+    move_costs = MoveCostTable.from_json_file("gamedata/")
+    for mvtype, data in move_costs.by_terrain.items():
+        pprint(mvtype)
+        pprint(data)
+    pprint(move_costs.by_feature)

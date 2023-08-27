@@ -367,16 +367,26 @@ class MoveCostTable:
     def from_json_file(folder_path: str):
         """Deserializes `MoveCostTable` from JSON file at `folder_path`, e.g. `gamedata/`.
 
-        Terrain costs is a {string: {string: {string: int}}} dictionary.
+        terrain_costs.json is a {string: {string: {string: int}}} dictionary.
+        feature_costs.json is a {string: int} dictionary.
+        features_groups.json is a [list[string]] list.
+
+        terrain_costs is a {(Terrain, Terrain): int} dictionary.
+        feature_costs is a {Features: int} dictionary.
+        feature_groups is used to add valid combinations of features.
         """
         terrain_path = f"{folder_path}terrain_costs.json"
         feature_path = f"{folder_path}feature_costs.json"
+        group_path = f"{folder_path}feature_groups.json"
 
         with open(terrain_path, "r", encoding="utf-8") as f:
             tdict = json.load(f)
 
         with open(feature_path, "r", encoding="utf-8") as f:
             fdict = json.load(f)
+
+        with open(group_path, "r", encoding="utf-8") as f:
+            glist = json.load(f)
 
         terrain_costs = {}
         feature_costs = {}
@@ -387,19 +397,28 @@ class MoveCostTable:
 
             for src_terrain_str, tgt_terrain_data in cost_data.items():
                 src_terrain = Terrain.from_string(src_terrain_str)
-                depth2 = {}
 
                 for tgt_terrain_str, cost in tgt_terrain_data.items():
                     tgt_terrain = Terrain.from_string(tgt_terrain_str)
-                    depth2[tgt_terrain] = cost
-                
-                depth1[src_terrain] = depth2
+                    depth1[(tgt_terrain, src_terrain)] = cost
 
             terrain_costs[move_type] = depth1
 
         for feature_str, cost in fdict.items():
             feature = Features.from_string(feature_str)
             feature_costs[feature] = cost
+
+        for feature_list in glist:
+            to_add = Features.EMPTY
+            cost = 0
+
+            for feature_str in feature_list:
+                feature = Features.from_string(feature_str)
+                to_add |= feature
+                cost += feature_costs[feature]
+
+            if to_add != Features.EMPTY:
+                feature_costs[to_add] = cost
 
         return MoveCostTable(terrain_costs, feature_costs)
 

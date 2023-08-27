@@ -1,0 +1,10 @@
+[
+    ["low_wall", "rough"],
+    ["low_wall", "loose"],
+    ["low_wall", "swamp"],
+    ["high_wall", "rough"],
+    ["high_wall", "loose"],
+    ["high_wall", "swamp"],
+    ["loose", "weeds"],
+    ["rough", "weeds"]
+]

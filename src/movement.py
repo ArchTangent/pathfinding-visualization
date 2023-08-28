@@ -145,42 +145,47 @@ class Terrain(IntFlag):
     """Base terrain. Fundamental structure for pathfinding."""
 
     EMPTY = 0  # No terrain
-    UNDERGROUND = 1  # Under solid ground or shallows
-    UNDERWATER = 2  # Under deep water
-    DEEP = 4  # Surface of deep water
-    SHALLOW = 8  # Surface of shallow water
-    LOW = 16  # On low elevation ground (flat)
-    MEDIUM = 32  # On medium elevation ground (hills)
-    HIGH = 64  # On high elevation ground (mountains)
-    AIR = 128  # Above ground or over a chasm
+    WALL_BASE = 1 # Holds a low wall, high wall, or destroyed wall
+    UNDERGROUND = 2  # Under solid ground or shallows
+    UNDERWATER = 4  # Under deep water
+    DEEP = 8  # Surface of deep water
+    SHALLOW = 16  # Surface of shallow water
+    LOW = 32  # On low elevation ground (flat)
+    MEDIUM = 64  # On medium elevation ground (hills)
+    HIGH = 128  # On high elevation ground (mountains)
+    AIR = 256  # Above ground or over a chasm
 
     def to_index(self) -> int:
         """Converts terrain to index form."""
         match self:
             case Terrain.EMPTY:
                 return 0
-            case Terrain.UNDERGROUND:
+            case Terrain.WALL_BASE:
                 return 1
-            case Terrain.UNDERWATER:
+            case Terrain.UNDERGROUND:
                 return 2
-            case Terrain.DEEP:
+            case Terrain.UNDERWATER:
                 return 3
-            case Terrain.SHALLOW:
+            case Terrain.DEEP:
                 return 4
-            case Terrain.LOW:
+            case Terrain.SHALLOW:
                 return 5
-            case Terrain.MEDIUM:
+            case Terrain.LOW:
                 return 6
-            case Terrain.HIGH:
+            case Terrain.MEDIUM:
                 return 7
-            case Terrain.AIR:
+            case Terrain.HIGH:
                 return 8
+            case Terrain.AIR:
+                return 9
 
     def to_string(self) -> str:
         """Converts terrain to string."""
         match self:
             case Terrain.EMPTY:
                 return "EMPTY"
+            case Terrain.WALL_BASE:
+                return "WALL_BASE"
             case Terrain.UNDERGROUND:
                 return "UNDERGROUND"
             case Terrain.UNDERWATER:
@@ -201,6 +206,10 @@ class Terrain(IntFlag):
     @staticmethod
     def from_string(s: str):
         """Converts string to terrain."""
+        if s == "empty":
+            return Terrain.EMPTY
+        if s == "wall_base":
+            return Terrain.WALL_BASE
         if s == "underground":
             return Terrain.UNDERGROUND
         if s == "underwater":
@@ -393,16 +402,16 @@ class MoveCostTable:
 
         for move_type_str, cost_data in tdict.items():
             move_type = MovementType.from_string(move_type_str)
-            depth1 = {}
+            inner = {}
 
             for src_terrain_str, tgt_terrain_data in cost_data.items():
                 src_terrain = Terrain.from_string(src_terrain_str)
 
                 for tgt_terrain_str, cost in tgt_terrain_data.items():
                     tgt_terrain = Terrain.from_string(tgt_terrain_str)
-                    depth1[(tgt_terrain, src_terrain)] = cost
+                    inner[(tgt_terrain, src_terrain)] = cost
 
-            terrain_costs[move_type] = depth1
+            terrain_costs[move_type] = inner
 
         for feature_str, cost in fdict.items():
             feature = Features.from_string(feature_str)

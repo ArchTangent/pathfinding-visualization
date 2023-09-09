@@ -83,7 +83,6 @@ class NeighborMap:
         for tid in range(ydims * xdims):
             self.inner[tid] = NeighborMap.neighbors(tid, xdims, ydims)
 
-    # def __getitem__(self, key: int) -> List[Optional[int]]:
     def __getitem__(self, key: int) -> Neighbors:
         return self.inner[key]
 
@@ -644,71 +643,71 @@ def breadth_first_search(pathmap: PathMap, src: int, tgt: int) -> Optional[List[
     return None
 
 
-def a_star(pathmap: PathMap, src: int, tgt: int) -> Optional[List[Tuple[int, int]]]:
-    """A* algorithm returning path and cost from source to target, or None if not found.
+# def a_star(pathmap: PathMap, src: int, tgt: int) -> Optional[List[Tuple[int, int]]]:
+#     """A* algorithm returning path and cost from source to target, or None if not found.
 
-    Notes:
-    - Actual cost (TUs) is used for the real path.
-    - Heuristic is abs(dx) + abs(dy) and is only used for priority.
-    - The `queue` is a min heap of `(priority, tid)` pairs.
-    - The `origin_of` dict holds `{to_node: from_node}` pairs.
-    - The `total_cost` dict holds `{to_node: running_cost}` pairs.
-    """
-    if src == tgt:
-        return [0]
+#     Notes:
+#     - Actual cost (TUs) is used for the real path.
+#     - Heuristic is abs(dx) + abs(dy) and is only used for priority.
+#     - The `queue` is a min heap of `(priority, tid)` pairs.
+#     - The `origin_of` dict holds `{to_node: from_node}` pairs.
+#     - The `total_cost` dict holds `{to_node: running_cost}` pairs.
+#     """
+#     if src == tgt:
+#         return [0]
 
-    print(f"[AStar] from {src} to {tgt}")
+#     print(f"[AStar] from {src} to {tgt}")
 
-    origin_of = {}
-    total_cost = {src: int(0)}
-    queue = []
-    tx, ty = pathmap.tile(tgt).coords()
+#     origin_of = {}
+#     total_cost = {src: int(0)}
+#     queue = []
+#     tx, ty = pathmap.tile(tgt).coords()
 
-    # TODO: get cost using Terrain and Features (separate costs)
-    while queue:
-        _priority, node_id = heappop(queue)
+#     # TODO: get cost using Terrain and Features (separate costs)
+#     while queue:
+#         _priority, node_id = heappop(queue)
 
-        if node_id == tgt:
-            path = [(tgt, total_cost[tgt])]
-            to_id = node_id
+#         if node_id == tgt:
+#             path = [(tgt, total_cost[tgt])]
+#             to_id = node_id
 
-            # TODO: finish path reconstruction
-            while to_id:
-                from_id = origin_of[to_id]
-                path.append((to_id, total_cost[to_id]))
-                to_id = from_id
+#             # TODO: finish path reconstruction
+#             while to_id:
+#                 from_id = origin_of[to_id]
+#                 path.append((to_id, total_cost[to_id]))
+#                 to_id = from_id
 
-            return path
+#             return path
 
-        node = pathmap.tile(node_id)
+#         node = pathmap.tile(node_id)
 
-        # Diagonal movement doesn't account for walls
+#         # Diagonal movement doesn't account for walls
 
-        # Cardinal movement accounts for walls
+#         # Cardinal movement accounts for walls
 
-        for edge_id in pathmap.tile(node_id).edges():
-            # TODO: cost from node to edge (next node)
-            edge = pathmap.tile(edge_id)
-            edge_cost = total_cost[edge_id] + movement_cost(node, edge)
+#         for edge_id in pathmap.tile(node_id).edges():
+#             # TODO: cost from node to edge (next node)
+#             edge = pathmap.tile(edge_id)
+#             edge_cost = total_cost[edge_id] + movement_cost(node, edge)
 
-            if edge_id not in total_cost or edge_cost < total_cost[edge_id]:
-                total_cost[edge_id] = edge_cost
-                origin_of[edge_id] = node_id
-                ex, ey = pathmap.tile(edge_id).coords()
-                priority = edge_cost + abs(tx - ex) + abs(ty - ey)
-                heappush(queue, (priority, edge_id))
+#             if edge_id not in total_cost or edge_cost < total_cost[edge_id]:
+#                 total_cost[edge_id] = edge_cost
+#                 origin_of[edge_id] = node_id
+#                 ex, ey = pathmap.tile(edge_id).coords()
+#                 priority = edge_cost + abs(tx - ex) + abs(ty - ey)
+#                 heappush(queue, (priority, edge_id))
 
-    return None
+#     return None
 
 
-# TODO: separate calc for Diagonal and Cardinal neighbors (cardinal uses walls)
-# TODO: add features and terrain/feature bonus
-def movement_cost(src: PathTile, tgt: PathTile) -> int:
-    """Returns movement cost from source to target tile.
+# # TODO: separate calc for Diagonal and Cardinal neighbors (cardinal uses walls)
+# # TODO: add features and terrain/feature bonus
+# def movement_cost(src: PathTile, tgt: PathTile) -> int:
+#     """Returns movement cost from source to target tile.
 
-    Cost is based on movement type, terrain, features, and modifiers.
-    Base cost is based on the target tile only.
-    """
+#     Cost is based on movement type, terrain, features, and modifiers.
+#     Base cost is based on the target tile only.
+#     """
 
 
 #   ##    ##     ##     ########  ##    ##

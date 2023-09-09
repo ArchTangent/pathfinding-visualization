@@ -1,228 +1,292 @@
 {
     "terrestrial": {
+        "shallow": {
+            "flat": { 
+                "N": { "cost": 40 },
+                "S": { "cost": 40 },
+                "E": { "cost": 40 },
+                "W": { "cost": 40 }
+            }
+        },
+        "flat": {
+            "flat": { 
+                "N": { "cost": 10 },
+                "S": { "cost": 10 },
+                "E": { "cost": 10 },
+                "W": { "cost": 10 },
+                "NE": { "cost": 14, "allowing": { "N": ["flat"], "E": ["flat"] } },
+                "NW": { "cost": 14, "allowing": { "N": ["flat"], "W": ["flat"] } },
+                "SE": { "cost": 14, "allowing": { "S": ["flat"], "E": ["flat"] } },
+                "SW": { "cost": 14, "allowing": { "S": ["flat"], "W": ["flat"] } }
+            },
+            "low": { 
+                "N": { "cost": 15 },
+                "S": { "cost": 15 },
+                "E": { "cost": 15 },
+                "W": { "cost": 15 },
+                "NE": { "cost": 21, "allowing": { "N": ["flat", "low"], "E": ["flat", "low"] } },
+                "NW": { "cost": 21, "allowing": { "N": ["flat", "low"], "W": ["flat", "low"] } },
+                "SE": { "cost": 21, "allowing": { "S": ["flat", "low"], "E": ["flat", "low"] } },
+                "SW": { "cost": 21, "allowing": { "S": ["flat", "low"], "W": ["flat", "low"] } }
+            },
+            "medium": { 
+                "N": { "cost": 30 },
+                "S": { "cost": 30 },
+                "E": { "cost": 30 },
+                "W": { "cost": 30 }
+            },
+            "high": { 
+                "N": { "cost": 40 },
+                "S": { "cost": 40 },
+                "E": { "cost": 40 },
+                "W": { "cost": 40 }
+            },
+            "low_wall_n": { 
+                "N": { "cost": 20 },
+                "S": { "cost": 20 }
+            },
+            "low_wall_w": { 
+                "E": { "cost": 20 },
+                "W": { "cost": 20 }
+            },
+            "high_wall_n": { 
+                "N": { "cost": 40 },
+                "S": { "cost": 40 }
+            },
+            "high_wall_w": { 
+                "E": { "cost": 40 },
+                "W": { "cost": 40 }
+            }
+        },
         "low": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20
+            "flat": { 
+                "N": { "cost": 10 },
+                "S": { "cost": 10 },
+                "E": { "cost": 10 },
+                "W": { "cost": 10 },
+                "NE": { "cost": 14, "allowing": { "N": ["flat", "low"], "E": ["flat", "low"] } },
+                "NW": { "cost": 14, "allowing": { "N": ["flat", "low"], "W": ["flat", "low"] } },
+                "SE": { "cost": 14, "allowing": { "S": ["flat", "low"], "E": ["flat", "low"] } },
+                "SW": { "cost": 14, "allowing": { "S": ["flat", "low"], "W": ["flat", "low"] } }
+            },
+            "low": { 
+                "N": { "cost": 10 },
+                "S": { "cost": 10 },
+                "E": { "cost": 10 },
+                "W": { "cost": 10 },
+                "NE": { "cost": 14, "allowing": { "N": ["low"], "E": ["low"] } },
+                "NW": { "cost": 14, "allowing": { "N": ["low"], "W": ["low"] } },
+                "SE": { "cost": 14, "allowing": { "S": ["low"], "E": ["low"] } },
+                "SW": { "cost": 14, "allowing": { "S": ["low"], "W": ["low"] } }
+            },
+            "medium": { 
+                "N": { "cost": 15 },
+                "S": { "cost": 15 },
+                "E": { "cost": 15 },
+                "W": { "cost": 15 },
+                "NE": { "cost": 21, "allowing": { "N": ["low", "medium"], "E": ["low", "medium"] } },
+                "NW": { "cost": 21, "allowing": { "N": ["low", "medium"], "W": ["low", "medium"] } },
+                "SE": { "cost": 21, "allowing": { "S": ["low", "medium"], "E": ["low", "medium"] } },
+                "SW": { "cost": 21, "allowing": { "S": ["low", "medium"], "W": ["low", "medium"] } }
+            },
+            "high": { 
+                "N": { "cost": 30 },
+                "S": { "cost": 30 },
+                "E": { "cost": 30 },
+                "W": { "cost": 30 }
+            },
+            "low_wall_n": { 
+                "N": { "cost": 15 },
+                "S": { "cost": 15 }
+            },
+            "low_wall_w": { 
+                "E": { "cost": 15 },
+                "W": { "cost": 15 }
+            },
+            "high_wall_n": { 
+                "N": { "cost": 35 },
+                "S": { "cost": 35 }
+            },
+            "high_wall_w": { 
+                "E": { "cost": 35 },
+                "W": { "cost": 35 }
+            }
         },
         "medium": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20
+            "flat": { 
+                "N": { "cost": 20 },
+                "S": { "cost": 20 },
+                "E": { "cost": 20 },
+                "W": { "cost": 20 }
+            },
+            "low": { 
+                "N": { "cost": 10 },
+                "S": { "cost": 10 },
+                "E": { "cost": 10 },
+                "W": { "cost": 10 },
+                "NE": { "cost": 14, "allowing": { "N": ["low", "medium"], "E": ["low", "medium"] } },
+                "NW": { "cost": 14, "allowing": { "N": ["low", "medium"], "W": ["low", "medium"] } },
+                "SE": { "cost": 14, "allowing": { "S": ["low", "medium"], "E": ["low", "medium"] } },
+                "SW": { "cost": 14, "allowing": { "S": ["low", "medium"], "W": ["low", "medium"] } }
+            },
+            "medium": { 
+                "N": { "cost": 10 },
+                "S": { "cost": 10 },
+                "E": { "cost": 10 },
+                "W": { "cost": 10 },
+                "NE": { "cost": 14, "allowing": { "N": ["medium"], "E": ["medium"] } },
+                "NW": { "cost": 14, "allowing": { "N": ["medium"], "W": ["medium"] } },
+                "SE": { "cost": 14, "allowing": { "S": ["medium"], "E": ["medium"] } },
+                "SW": { "cost": 14, "allowing": { "S": ["medium"], "W": ["medium"] } }
+            },
+            "high": { 
+                "N": { "cost": 15 },
+                "S": { "cost": 15 },
+                "E": { "cost": 15 },
+                "W": { "cost": 15 },
+                "NE": { "cost": 21, "allowing": { "N": ["medium", "high"], "E": ["medium", "high"] } },
+                "NW": { "cost": 21, "allowing": { "N": ["medium", "high"], "W": ["medium", "high"] } },
+                "SE": { "cost": 21, "allowing": { "S": ["medium", "high"], "E": ["medium", "high"] } },
+                "SW": { "cost": 21, "allowing": { "S": ["medium", "high"], "W": ["medium", "high"] } }
+            },
+            "low_wall_n": { 
+                "N": { "cost": 0 },
+                "S": { "cost": 0 }
+            },
+            "low_wall_w": { 
+                "E": { "cost": 0 },
+                "W": { "cost": 0 }
+            },
+            "high_wall_n": { 
+                "N": { "cost": 30 },
+                "S": { "cost": 30 }
+            },
+            "high_wall_w": { 
+                "E": { "cost": 30 },
+                "W": { "cost": 30 }
+            }
         },
         "high": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20
+            "flat": { 
+                "N": { "cost": 30 },
+                "S": { "cost": 30 },
+                "E": { "cost": 30 },
+                "W": { "cost": 30 }
+            },
+            "low": { 
+                "N": { "cost": 20 },
+                "S": { "cost": 20 },
+                "E": { "cost": 20 },
+                "W": { "cost": 20 }
+            },
+            "medium": { 
+                "N": { "cost": 10 },
+                "S": { "cost": 10 },
+                "E": { "cost": 10 },
+                "W": { "cost": 10 },
+                "NE": { "cost": 15, "allowing": { "N": ["medium", "high"], "E": ["medium", "high"] } },
+                "NW": { "cost": 15, "allowing": { "N": ["medium", "high"], "W": ["medium", "high"] } },
+                "SE": { "cost": 15, "allowing": { "S": ["medium", "high"], "E": ["medium", "high"] } },
+                "SW": { "cost": 15, "allowing": { "S": ["medium", "high"], "W": ["medium", "high"] } }
+            },
+            "high": { 
+                "N": { "cost": 10 },
+                "S": { "cost": 10 },
+                "E": { "cost": 10 },
+                "W": { "cost": 10 },
+                "NE": { "cost": 14, "allowing": { "N": ["high"], "E": ["high"] } },
+                "NW": { "cost": 14, "allowing": { "N": ["high"], "W": ["high"] } },
+                "SE": { "cost": 14, "allowing": { "S": ["high"], "E": ["high"] } },
+                "SW": { "cost": 14, "allowing": { "S": ["high"], "W": ["high"] } }
+            },
+            "low_wall_n": { 
+                "N": { "cost": 0 },
+                "S": { "cost": 0 }
+            },
+            "low_wall_w": { 
+                "E": { "cost": 0 },
+                "W": { "cost": 0 }
+            },
+            "high_wall_n": { 
+                "N": { "cost": 0 },
+                "S": { "cost": 0 }
+            },
+            "high_wall_w": { 
+                "E": { "cost": 0 },
+                "W": { "cost": 0 }
+            }
         },
-        "shallow": {
-            "wall_base": 0,
-            "low": 40,
-            "medium": 60,
-            "high": 80
+        "low_wall_n" : {            
+            "flat": { 
+                "N": { "cost": 20 },
+                "S": { "cost": 20 }
+            },
+            "low": { 
+                "N": { "cost": 15 },
+                "S": { "cost": 15 }
+            },
+            "medium": { 
+                "N": { "cost": 10 },
+                "S": { "cost": 10 }
+            },
+            "high": { 
+                "N": { "cost": 0 },
+                "S": { "cost": 0 }
+            }
         },
-        "deep": {
-            "shallow": 50
-        }
-    },
-    "subterranean": {
-        "low": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "underground": 40
+        "low_wall_w" : {            
+            "flat": { 
+                "E": { "cost": 20 },
+                "W": { "cost": 20 }
+            },
+            "low": { 
+                "E": { "cost": 15 },
+                "W": { "cost": 15 }
+            },
+            "medium": { 
+                "E": { "cost": 10 },
+                "W": { "cost": 10 }
+            },
+            "high": { 
+                "E": { "cost": 0 },
+                "W": { "cost": 0 }
+            }
         },
-        "medium": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "underground": 50
+        "high_wall_n" : {            
+            "flat": { 
+                "N": { "cost": 40 },
+                "S": { "cost": 40 }
+            },
+            "low": { 
+                "N": { "cost": 35 },
+                "S": { "cost": 35 }
+            },
+            "medium": { 
+                "N": { "cost": 30 },
+                "S": { "cost": 30 }
+            },
+            "high": { 
+                "N": { "cost": 0 },
+                "S": { "cost": 0 }
+            }
         },
-        "high": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "underground": 60
-        },
-        "shallow": {
-            "wall_base": 0,
-            "low": 40,
-            "medium": 60,
-            "high": 80
-        },
-        "underground": {
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "underground": 40
-        }
-    },
-    "amphibious": {
-        "low": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "shallow": 20
-        },
-        "medium": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "shallow": 20
-        },
-        "high": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "shallow": 20
-        },
-        "shallow": {
-            "wall_base": 0,
-            "low": 20,
-            "medium": 30,
-            "high": 40,
-            "shallow": 20
-        },
-        "deep": {
-            "shallow": 40
-        }
-    },
-    "deep_amphibious": {
-        "low": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "shallow": 20,
-            "deep": 20
-        },
-        "medium": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "shallow": 20,
-            "deep": 20
-        },
-        "high": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "shallow": 20,
-            "deep": 20
-        },
-        "shallow": {
-            "wall_base": 0,
-            "low": 20,
-            "medium": 15,
-            "high": 20,
-            "shallow": 25,
-            "deep": 25
-        },
-        "deep": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 15,
-            "high": 20,
-            "shallow": 25,
-            "deep": 25,
-            "underwater": 30
-        },
-        "underwater": {
-            "deep": 30
-        }
-    },
-    "aquatic": {
-        "low": {
-            "shallow": 40,
-            "deep": 40
-        },
-        "medium": {
-            "shallow": 40,
-            "deep": 40
-        },
-        "high": {
-            "shallow": 40,
-            "deep": 40
-        },
-        "shallow": {
-            "shallow": 10,
-            "deep": 10
-        },
-        "deep": {
-            "shallow": 10,
-            "deep": 10,
-            "underwater": 15
-        },
-        "underwater": {
-            "deep": 15,
-            "underwater": 15
-        }
-    },
-    "aerial": {
-        "low": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 10,
-            "high": 10,
-            "shallow": 10,
-            "deep": 10,
-            "air": 10 
-        },
-        "medium": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 10,
-            "high": 10,
-            "shallow": 10,
-            "deep": 10,
-            "air": 10 
-        },
-        "high": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 10,
-            "high": 10,
-            "shallow": 10,
-            "deep": 10,
-            "air": 10 
-        },
-        "shallow": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 10,
-            "high": 10,
-            "shallow": 10,
-            "deep": 10,
-            "air": 10 
-        },
-        "deep": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 10,
-            "high": 10,
-            "shallow": 10,
-            "deep": 10,
-            "air": 10 
-        },
-        "air": {
-            "wall_base": 0,
-            "low": 10,
-            "medium": 10,
-            "high": 10,
-            "shallow": 10,
-            "deep": 10,
-            "air": 10 
+        "high_wall_w" : {            
+            "flat": { 
+                "E": { "cost": 40 },
+                "W": { "cost": 40 }
+            },
+            "low": { 
+                "E": { "cost": 35 },
+                "W": { "cost": 35 }
+            },
+            "medium": { 
+                "E": { "cost": 30 },
+                "W": { "cost": 30 }
+            },
+            "high": { 
+                "E": { "cost": 0 },
+                "W": { "cost": 0 }
+            }
         }
     }
 }

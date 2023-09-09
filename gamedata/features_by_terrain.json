@@ -1,4 +1,5 @@
 {
+    "wall_base": ["low_wall", "high_wall"],
     "underground": [],
     "underwater": ["weeds", "reef"],
     "deep": ["weeds", "reef"],

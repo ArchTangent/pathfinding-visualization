@@ -141,51 +141,29 @@ class Features(IntFlag):
         raise ValueError("Invalid string representation of Features!")
 
 
-class Terrain(IntFlag):
+class Terrain(IntEnum):
     """Base terrain. Fundamental structure for pathfinding."""
 
-    EMPTY = 0  # No terrain
-    WALL_BASE = 1 # Holds a low wall, high wall, or destroyed wall
-    UNDERGROUND = 2  # Under solid ground or shallows
-    UNDERWATER = 4  # Under deep water
-    DEEP = 8  # Surface of deep water
-    SHALLOW = 16  # Surface of shallow water
-    LOW = 32  # On low elevation ground (flat)
-    MEDIUM = 64  # On medium elevation ground (hills)
-    HIGH = 128  # On high elevation ground (mountains)
-    AIR = 256  # Above ground or over a chasm
-
-    def to_index(self) -> int:
-        """Converts terrain to index form."""
-        match self:
-            case Terrain.EMPTY:
-                return 0
-            case Terrain.WALL_BASE:
-                return 1
-            case Terrain.UNDERGROUND:
-                return 2
-            case Terrain.UNDERWATER:
-                return 3
-            case Terrain.DEEP:
-                return 4
-            case Terrain.SHALLOW:
-                return 5
-            case Terrain.LOW:
-                return 6
-            case Terrain.MEDIUM:
-                return 7
-            case Terrain.HIGH:
-                return 8
-            case Terrain.AIR:
-                return 9
+    EMPTY = 0  # No terrain. An error if present in final map
+    UNDERGROUND = 1  # Under solid ground or shallows
+    UNDERWATER = 2  # Under deep water
+    DEEP = 3  # Surface of deep water
+    SHALLOW = 4  # Surface of shallow water
+    FLAT = 5  # On flat ground (floor)
+    LOW = 6  # On low elevation ground or lower stair (1/3 height, ~3ft)
+    MEDIUM = 7  # On medium elevation ground or upper stair (2/3 height, ~6ft)
+    HIGH = 8  # On high elevation ground (full height, ~9ft)
+    LOW_WALL_N = 9 # Low height North wall in distinct node
+    LOW_WALL_W = 10 # Low height West wall in distinct node
+    HIGH_WALL_N = 11 # Full height North wall in distinct node
+    HIGH_WALL_W = 12 # Full height West wall in distinct node
+    AIR = 13  # Above ground or over a chasm
 
     def to_string(self) -> str:
         """Converts terrain to string."""
         match self:
             case Terrain.EMPTY:
                 return "EMPTY"
-            case Terrain.WALL_BASE:
-                return "WALL_BASE"
             case Terrain.UNDERGROUND:
                 return "UNDERGROUND"
             case Terrain.UNDERWATER:
@@ -194,12 +172,22 @@ class Terrain(IntFlag):
                 return "DEEP"
             case Terrain.SHALLOW:
                 return "SHALLOW"
+            case Terrain.FLAT:
+                return "FLAT"
             case Terrain.LOW:
                 return "LOW"
             case Terrain.MEDIUM:
                 return "MEDIUM"
             case Terrain.HIGH:
                 return "HIGH"
+            case Terrain.LOW_WALL_N:
+                return "LOW_WALL_N"
+            case Terrain.LOW_WALL_W:
+                return "LOW_WALL_W"
+            case Terrain.HIGH_WALL_N:
+                return "HIGH_WALL_N"
+            case Terrain.HIGH_WALL_W:
+                return "HIGH_WALL_W"
             case Terrain.AIR:
                 return "AIR"
 
@@ -208,8 +196,6 @@ class Terrain(IntFlag):
         """Converts string to terrain."""
         if s == "empty":
             return Terrain.EMPTY
-        if s == "wall_base":
-            return Terrain.WALL_BASE
         if s == "underground":
             return Terrain.UNDERGROUND
         if s == "underwater":
@@ -218,12 +204,22 @@ class Terrain(IntFlag):
             return Terrain.DEEP
         if s == "shallow":
             return Terrain.SHALLOW
+        if s == "flat":
+            return Terrain.FLAT
         if s == "low":
             return Terrain.LOW
         if s == "medium":
             return Terrain.MEDIUM
         if s == "high":
             return Terrain.HIGH
+        if s == "low_wall_n":
+            return Terrain.LOW_WALL_N
+        if s == "low_wall_w":
+            return Terrain.LOW_WALL_W
+        if s == "high_wall_n":
+            return Terrain.HIGH_WALL_N
+        if s == "high_wall_w":
+            return Terrain.HIGH_WALL_W
         if s == "air":
             return Terrain.AIR
 

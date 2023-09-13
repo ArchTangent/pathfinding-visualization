@@ -1,41 +1,142 @@
 """Pathfinding using pathing maps."""
+import json
 import pygame
+from collections import OrderedDict
 from enum import Enum
 from heapq import heappush, heappop
-from helpers import Colors, Coords, Obstacles, Settings
+from helpers import Colors, Coords, Settings
 from movement import (
     Features,
     MovementType,
     PathContext,
     PathContexts,
     Terrain,
-    TerrainData,
 )
 from pygame.freetype import Font
 from typing import Dict, List, Optional, Self, Tuple
 
 
-class NodeType(Enum):
-    """Defines a pathfinding node as a tile or North/West wall."""
+class Location:
+    """Stores NodeID and Terrain for a `LocationMap`."""
 
-    TILE = 1
-    N_WALL = 2
-    W_WALL = 3
+    def __init__(self, nid: int, terrain: Terrain) -> None:
+        self.nid = nid
+        self.terrain = terrain
 
 
 class LocationMap:
-    """Converts `(x, y, node_type)` location to tile ID in a `PathMap`."""
+    """Maps (x,y) coordinates to node ID and Terrain for creation of a `PathMap`.
 
-    def __init__(self) -> None:
-        self.inner: Dict[Tuple[int, int, NodeType], int] = {}
+    Notes:
+    - Updates Node ID (nid) for each valid Node (Tile, West Wall, North Wall) added.
+    - No North walls placed where y == 0 (leads nowhere)
+    - No West walls placed where x == 0 (leads nowhere)
+    """
 
-    def insert(self, x: int, y: int, node_type: NodeType, tid: int):
-        """Inserts new {k:v} pair into the map."""
-        self.inner[(x, y, node_type)] = tid
+    def __init__(
+        self,
+    ) -> None:
+        self.nid = 0
+        self.tiles: OrderedDict[Tuple[int, int], Location] = OrderedDict()
+        self.walls_n: Dict[Tuple[int, int], Location] = {}
+        self.walls_w: Dict[Tuple[int, int], Location] = {}
 
-    def get(self, x: int, y: int, node_type: NodeType) -> Optional[int]:
-        """Returns tile ID at given location and node type, or None is not present."""
-        return self.inner.get((x, y, node_type))
+    def insert(self, x: int, y: int, terrain: Terrain):
+        """Inserts new node into location map based on Terrain type (Tile, N/W wall)."""
+        if terrain.is_north_wall():
+            if y > 0:
+                self.walls_n[(x, y)] = Location(self.nid, terrain)
+                self.nid += 1
+        elif terrain.is_west_wall():
+            if x > 0:
+                self.walls_w[(x, y)] = Location(self.nid, terrain)
+                self.nid += 1
+        else:
+            self.tiles[(x, y)] = Location(self.nid, terrain)
+            self.nid += 1
+
+    def get_tile_id(self, x: int, y: int) -> Optional[int]:
+        """Returns tile Node ID at given coordinates, or None if not present."""
+        location = self.tiles.get((x, y))
+        return location.nid if location else None
+
+    def get_tile(self, x: int, y: int) -> Optional[Location]:
+        """Returns tile Location at given coordinates, or None if not present."""
+        return self.tiles.get((x, y))
+
+    def get_north_wall_id(self, x: int, y: int) -> Optional[int]:
+        """Returns wall Nod ID at given coordinates, or None if not present."""
+        location = self.walls_n.get((x, y))
+        return location.nid if location else None
+
+    def get_north_wall(self, x: int, y: int) -> Optional[Location]:
+        """Returns wall Location at given coordinates, or None if not present."""
+        return self.walls_n.get((x, y))
+
+    def get_west_wall_id(self, x: int, y: int) -> Optional[int]:
+        """Returns wall Node ID at given coordinates, or None if not present."""
+        location = self.walls_n.get((x, y))
+        return location.nid if location else None
+
+    def get_west_wall(self, x: int, y: int) -> Optional[Location]:
+        """Returns wall Location at given coordinates, or None if not present."""
+        return self.walls_w.get((x, y))
+
+    def tile_items(self):
+        """Returns tiles dictionary items, in order added."""
+        return self.tiles.items()
+
+    @staticmethod
+    def from_json_file(fp: str, settings: Settings):
+        """Creates a `LocationMap` JSON file at path `fp`from list of strings.
+
+        Example `map_data.json`:
+        ```json
+        {
+            "tiles" = [
+                "LLLSDSLL",
+                "LLLSDSLL",
+                "LLSSDSLL",
+                "LSDDDSLL",
+                "LSDSSLLL",
+                "LSDSLLLL"
+            ],
+            "walls": {
+                "1,0": ["high_wall_w"],
+                "3,1": ["high_wall_n","high_wall_w"]
+            }
+        }
+        ```
+        """
+        xdims, ydims = settings.xdims, settings.ydims
+        location_map = LocationMap()
+
+        with open(fp, "r", encoding="utf-8") as f:
+            jdict = json.load(f)
+
+        tiles = jdict["tiles"]
+        walls: Dict[Tuple[int, int], List[Terrain]] = {}
+
+        for coords, wall_strs in jdict["walls"].items():
+            x, y = coords.split(",")
+            walls[(int(x), int(y))] = [Terrain.from_string(w) for w in wall_strs]
+
+        if len(tiles) != ydims:
+            raise ValueError(f"{fp}: Y dimensions don't match settings!")
+
+        for y, str_row in enumerate(tiles):
+            if len(str_row) != xdims:
+                raise ValueError(f"{fp}:  dimensions don't match settings!")
+
+            for x, terrain_char in enumerate(str_row):
+                terrain = Terrain.from_symbol(terrain_char)
+
+                location_map.insert(x, y, terrain)
+
+                for wall_node in walls.get((x, y), []):
+                    location_map.insert(x, y, wall_node)
+
+        return location_map
 
 
 class Neighbor:
@@ -122,22 +223,20 @@ class NeighborMap:
         return Neighbors(nw, n, ne, w, e, sw, s, se)
 
 
-class PathTile:
-    """Terrain, obstructions, and neighbors for a pathfinding tile and movement type.
+class Node:
+    """Terrain (NodeType) and neighbors for a pathfinding tile and movement type.
 
     Notes:
-    - `NW` to `SE` are the 8 neighbors, stored in TID order.
+    - If neighbor is invalid (e.g. out of bounds), the value is `None`.
     - `above` and `below` indicate Air terrain above and Underground/Underwater below.
-    - each movement type has its own PathMap and PathTiles.
+    - each movement type has its own NodeCosts and CostTable.
     """
 
     __slots__ = (
         "x",
         "y",
         "terrain",
-        "structure",
-        "wall_n",
-        "wall_w",
+        "features",
         "NW",
         "N",
         "NE",
@@ -150,54 +249,127 @@ class PathTile:
         "below",
     )
 
-    def __init__(self, x: int, y: int, terrain: Terrain, obstacles: Obstacles) -> None:
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        terrain: Terrain,
+        features: Features,
+        N: Optional[int] = None,
+        S: Optional[int] = None,
+        E: Optional[int] = None,
+        W: Optional[int] = None,
+        NW: Optional[int] = None,
+        NE: Optional[int] = None,
+        SW: Optional[int] = None,
+        SE: Optional[int] = None,
+    ) -> None:
         """Create a new instance."""
         self.x = x
         self.y = y
-        self.terrain: Terrain = terrain
-        self.structure = obstacles.structure
-        self.wall_n = obstacles.wall_n
-        self.wall_w = obstacles.wall_w
-        self.NW: Optional[int] = None
-        self.N: Optional[int] = None
-        self.NE: Optional[int] = None
-        self.W: Optional[int] = None
-        self.E: Optional[int] = None
-        self.SW: Optional[int] = None
-        self.S: Optional[int] = None
-        self.SE: Optional[int] = None
-        self.above: int
-        self.below: int
+        self.terrain = terrain
+        self.features = features
+        self.N = N
+        self.S = S
+        self.E = E
+        self.W = W
+        self.NW = NW
+        self.NE = NE
+        self.SW = SW
+        self.SE = SE
+        self.above: Terrain
+        self.below: Terrain
 
         match terrain:
+            case Terrain.EMPTY:
+                raise ValueError("EMPTY is an invalid base terrain!")
             case Terrain.UNDERGROUND:
                 raise ValueError("UNDERGROUND is an invalid base terrain!")
             case Terrain.UNDERWATER:
                 raise ValueError("UNDERWATER is an invalid base terrain!")
-            case Terrain.DEEP:
-                self.above = Terrain.AIR.value
-                self.below = Terrain.UNDERWATER.value
-            case Terrain.SHALLOW:
-                self.above = Terrain.AIR.value
-                self.below = Terrain.UNDERGROUND.value
-            case Terrain.LOW:
-                self.above = Terrain.AIR.value
-                self.below = Terrain.UNDERGROUND.value
-            case Terrain.MEDIUM:
-                self.above = Terrain.AIR.value
-                self.below = Terrain.UNDERGROUND.value
-            case Terrain.HIGH:
-                self.above = Terrain.AIR.value
-                self.below = Terrain.UNDERGROUND.value
             case Terrain.AIR:
                 raise ValueError("AIR is an invalid base terrain!")
+            case Terrain.DEEP:
+                self.above = Terrain.AIR
+                self.below = Terrain.UNDERWATER
+            case _:
+                self.above = Terrain.AIR
+                self.below = Terrain.UNDERGROUND
+
+    @staticmethod
+    def tile(x: int, y: int, t: Terrain, f: Features, location_map: LocationMap):
+        """Creates new Tile (not a wall) instance.
+
+        Rules:
+        - No NW, N, or NE neighbor when y = 0
+        - No SW, S, or SE neighbor when y = ymax
+        - No NW, W, or SW neighbor when x = 0
+        - No SE, E, or SE neighbor when x = xmax
+        - Cardinal neighbors can be tiles or walls
+        - Diagonal neighbors can only be tiles
+        """
+        # North wall in own tile, or tile to North
+        N = location_map.get_north_wall_id(x, y)
+        if N is None:
+            N = location_map.get_tile_id(x, y - 1)
+
+        # North wall in tile to South, or tile to South
+        S = location_map.get_north_wall_id(x, y + 1)
+        if S is None:
+            S = location_map.get_tile_id(x, y + 1)
+
+        # West wall in tile to East, or tile to East
+        E = location_map.get_west_wall_id(x + 1, y)
+        if E is None:
+            E = location_map.get_tile_id(x + 1, y)
+
+        # West wall in own tile, or tile to West
+        W = location_map.get_west_wall_id(x, y)
+        if W is None:
+            W = location_map.get_tile_id(x - 1, y)
+
+        # Tiles only for diagonal neighbors
+        NW = location_map.get_tile_id(x - 1, y - 1)
+        NE = location_map.get_tile_id(x + 1, y - 1)
+        SW = location_map.get_tile_id(x - 1, y + 1)
+        SE = location_map.get_tile_id(x + 1, y + 1)
+
+        return Node(x, y, t, f, N, S, E, W, NW, NE, SW, SE)
+
+    @staticmethod
+    def north_wall(x: int, y: int, t: Terrain, f: Features, location_map: LocationMap):
+        """Creates new North wall instance.
+
+        Rules:
+        - Not placed where y = 0 (should not even be in the LocationMap)
+        - N and S neighbors only
+        - Neighbors can only be tiles
+        """
+        N = location_map.get_tile_id(x, y - 1)
+        S = location_map.get_tile_id(x, y + 1)
+
+        return Node(x, y, t, f, N=N, S=S)
+
+    @staticmethod
+    def west_wall(x: int, y: int, t: Terrain, f: Features, location_map: LocationMap):
+        """Creates new West wall instance.
+
+        Rules:
+        - Not placed where x = 0 (should not even be in the LocationMap)
+        - E and W neighbors only
+        - Neighbors can only be tiles
+        """
+        E = location_map.get_tile_id(x + 1, y)
+        W = location_map.get_tile_id(x - 1, y)
+
+        return Node(x, y, t, f, E=E, W=W)
 
     def coords(self) -> Tuple[int, int]:
-        """Returns (x,y) coordinates of the PathTile"""
+        """Returns (x,y) coordinates of this Node."""
         return (self.x, self.y)
 
     def edges(self) -> List[int]:
-        """Returns tile IDs of all valid neighbors of this PathTile."""
+        """Returns tile IDs of all valid neighbors of this Node."""
         return [
             edge
             for edge in (
@@ -248,8 +420,6 @@ class PathTile:
         """
         if context[self.terrain] & tgt.terrain == 0:
             return False
-        if self.wall_n:
-            return False
 
         return True
 
@@ -261,8 +431,6 @@ class PathTile:
         - Target tile `tgt` has no North wall
         """
         if context[self.terrain] & tgt.terrain == 0:
-            return False
-        if tgt.wall_n:
             return False
 
         return True
@@ -276,8 +444,6 @@ class PathTile:
         """
         if context[self.terrain] & tgt.terrain == 0:
             return False
-        if tgt.wall_w:
-            return False
 
         return True
 
@@ -289,8 +455,6 @@ class PathTile:
         - Source tile `self` has no West wall
         """
         if context[self.terrain] & tgt.terrain == 0:
-            return False
-        if self.wall_w:
             return False
 
         return True
@@ -307,12 +471,6 @@ class PathTile:
         - West tile `w` has no North wall or Structure
         """
         if context[self.terrain] & tgt.terrain == 0:
-            return False
-        if self.wall_n or self.wall_w:
-            return False
-        if n and (n.structure or n.wall_w):
-            return False
-        if w and (w.structure or w.wall_n):
             return False
 
         return True
@@ -331,14 +489,6 @@ class PathTile:
         """
         if context[self.terrain] & tgt.terrain == 0:
             return False
-        if self.wall_n:
-            return False
-        if tgt.wall_w:
-            return False
-        if n and n.structure:
-            return False
-        if e and (e.structure or e.wall_n or e.wall_w):
-            return False
 
         return True
 
@@ -356,14 +506,6 @@ class PathTile:
         """
         if context[self.terrain] & tgt.terrain == 0:
             return False
-        if self.wall_w:
-            return False
-        if tgt.wall_n:
-            return False
-        if s and (s.structure or s.wall_n or s.wall_w):
-            return False
-        if w and w.structure:
-            return False
 
         return True
 
@@ -380,120 +522,54 @@ class PathTile:
         """
         if context[self.terrain] & tgt.terrain == 0:
             return False
-        if tgt.wall_n or tgt.wall_w:
-            return False
-        if s and (s.structure or s.wall_n):
-            return False
-        if e and (e.structure or e.wall_w):
-            return False
 
         return True
 
 
 class PathMap:
-    """Holds `PathTile` instances for a given movement type.
+    """Holds `Node` instances for all tiles and walls in a map. Used for all movement types.
 
     Initialization:
-    1. Insert North wall, West wall, or tile `PathTile` for each `(x,y)` into `tiles`.
-    North node type goes before West, and West before tile. Don't add North wall into
-    top row, or West wall into left column (no tiles to connect to).
-    2. Update `LocationMap` with `{(x, y, node_type): TID}` pairs.
-    3. Insert valid neighbors into each `PathTile`.
+    1. Iterate over each tile's (x,y): Location in ordered LocationMap
+    2. Create Node with data from step (1)
+    3. Append Node to PathMap
+    4. Add any North and West walls associated with (x,y) coordinates
     """
 
     def __init__(
         self,
-        movement_type: MovementType,
-        terrain_data: TerrainData,
-        obstacle_data: Dict[Tuple[int, int], Obstacles],
-        neighbors: NeighborMap,
-        context: PathContext,
+        location_map: LocationMap,
         settings: Settings,
     ) -> None:
-        self.movement_type = movement_type
-        self.movement_type_str = movement_type.to_string()
-        self.tiles: List[PathTile] = []
+        self.nodes: List[Node] = []
         self.xdims = settings.xdims
         self.ydims = settings.ydims
 
-        # TODO: Update Neighbors and Neighbor (see scratch paper)
-        # TODO: Remove wall_n and wall_w from PathTile
-        # TODO: finish
-        location_map = LocationMap()
-        tid = 0
+        for (x, y), location in location_map.tile_items():
+            tile = Node.tile(x, y, location.terrain, Features.EMPTY, location_map)
+            self.nodes.append(tile)
 
-        for y in range(settings.ydims):
-            for x in range(settings.xdims):
-                terrain = terrain_data[(x, y)]
-                obstacles = obstacle_data.get((x, y), Obstacles())
+            north_wall = location_map.get_north_wall(x, y)
+            if north_wall:
+                wall_n = Node.north_wall(
+                    x, y, location.terrain, Features.EMPTY, location_map
+                )
+                self.nodes.append(wall_n)
 
-                # TODO: new PathTile for Wall N, Wall W, and Tile
+            west_wall = location_map.get_west_wall(x, y)
+            if west_wall:
+                wall_w = Node.west_wall(
+                    x, y, location.terrain, Features.EMPTY, location_map
+                )
+                self.nodes.append(wall_w)
 
-                if obstacles.wall_n and y > 0:
-                    location_map.insert(x, y, NodeType.N_WALL, tid)
-                    tile = PathTile(x, y, terrain, obstacles)
-                    tid += 1
-
-                if obstacles.wall_w and x > 0:
-                    location_map.insert(x, y, NodeType.W_WALL, tid)
-                    tile = PathTile(x, y, terrain, obstacles)
-                    tid += 1
-
-                location_map.insert(x, y, NodeType.TILE, tid)
-                tile = PathTile(x, y, terrain, obstacles)
-                tid += 1
-
-                self.tiles.append(tile)
-
-        self.set_valid_neighbors(neighbors, context)
-
-    def set_valid_neighbors(self, neighbors: NeighborMap, ctx: PathContext):
-        """Sets valid neighbors for each PathTile in the PathMap."""
-        valid_neighbors = get_valid_neighbors(self.tiles, neighbors, ctx)
-
-        # Insert valid neighbors for each PathTile
-        for tid, nbrs in valid_neighbors.items():
-            tile = self.tiles[tid]
-            tile.NW = nbrs.NW
-            tile.N = nbrs.N
-            tile.NE = nbrs.NE
-            tile.W = nbrs.W
-            tile.E = nbrs.E
-            tile.SW = nbrs.SW
-            tile.S = nbrs.S
-            tile.SE = nbrs.SE
-
-    def tile(self, tid: int):
-        """Returns the PathTile with given tile ID."""
-        return self.tiles[tid]
-
-
-class PathMaps:
-    """Holds a PathMap for each movement type."""
-
-    def __init__(
-        self,
-        terrain_data: TerrainData,
-        obstacle_data: Dict[Tuple[int, int], Obstacles],
-        contexts: PathContexts,
-        settings: Settings,
-    ) -> None:
-        self.inner = []
-
-        neighbor_map = NeighborMap(settings.xdims, settings.ydims)
-
-        for move_type, context in contexts.items():
-            pathmap = PathMap(
-                move_type, terrain_data, obstacle_data, neighbor_map, context, settings
-            )
-            self.inner.append(pathmap)
-
-    def get_map(self, mvtype: MovementType) -> PathMap:
-        return self.inner[mvtype]
+    def node(self, tid: int):
+        """Returns the Node with given node ID."""
+        return self.nodes[tid]
 
 
 def get_valid_neighbors(
-    tiles: List[PathTile], neighbors: NeighborMap, ctx: PathContext
+    tiles: List[Node], neighbors: NeighborMap, ctx: PathContext
 ) -> Dict[int, Neighbors]:
     """Returns dictionary of valid neighbors for each tile.
 
@@ -576,7 +652,7 @@ def breadth_first_search_depth(pathmap: PathMap, src: int, tgt: int) -> Optional
     seen = {src}
     depth = 1
 
-    for edge in pathmap.tile(src).edges():
+    for edge in pathmap.node(src).edges():
         curr.append(edge)
         seen.add(edge)
 
@@ -587,7 +663,7 @@ def breadth_first_search_depth(pathmap: PathMap, src: int, tgt: int) -> Optional
             if node == tgt:
                 return depth
 
-            for edge in pathmap.tile(node).edges():
+            for edge in pathmap.node(node).edges():
                 if edge not in seen:
                     next.append(edge)
                     seen.add(edge)
@@ -613,7 +689,7 @@ def breadth_first_search(pathmap: PathMap, src: int, tgt: int) -> Optional[List[
     curr = []
     next = []
 
-    for edge in pathmap.tile(src).edges():
+    for edge in pathmap.node(src).edges():
         curr.append(edge)
         seen[edge] = src
 
@@ -633,7 +709,7 @@ def breadth_first_search(pathmap: PathMap, src: int, tgt: int) -> Optional[List[
                 path.append(src)
                 return path
 
-            for edge in pathmap.tile(node).edges():
+            for edge in pathmap.node(node).edges():
                 if edge not in seen:
                     next.append(edge)
                     seen[edge] = node
@@ -725,33 +801,15 @@ if __name__ == "__main__":
 
     settings = Settings(1280, 720, Coords(8, 6), Font(None, size=16), colors)
 
-    terrain_map = [
-        "LLLSDSLL",
-        "LLLSSSLL",
-        "LLSSDSLL",
-        "LSDDDSLL",
-        "LSDSSLLL",
-        "LSDSLLLL",
-    ]
+    location_map = LocationMap.from_json_file("gamedata/map_data.json", settings)
+    path_contexts = PathContexts.from_json_file("gamedata/path_contexts.json")
 
-    terrain_data = TerrainData.from_map_data(terrain_map, settings)
+    mvtype = MovementType.TERRESTRIAL
+    pathmap = PathMap(location_map, settings)
 
-    obstacle_data: Dict[Tuple[int, int], Obstacles] = {
-        # (3, 0): Obstacles(structure=2),
-    }
-
-    contexts = PathContexts.from_json_file("gamedata/contexts.json")
-
-    # TODO: tile size to 32?
-    # TODO: update draw_tile() for terrain
-    # TODO: build and draw PathMap
-
-    pathmaps = PathMaps(terrain_data, obstacle_data, contexts, settings)
     src = 0
     tgt = 47
     print(f"--- BFS ---")
-    mvtype = MovementType.DEEP_AMPHIBIOUS
-    pathmap = pathmaps.get_map(mvtype)
     bfs = breadth_first_search_depth(pathmap, src, tgt)
     bfs_p = breadth_first_search(pathmap, src, tgt)
     print(f"from {src} to {tgt} for {mvtype.to_string()}:")
@@ -759,9 +817,14 @@ if __name__ == "__main__":
     print(f"  bfs_path: {bfs_p}")
 
     mvtype = MovementType.AMPHIBIOUS
-    pathmap = pathmaps.get_map(mvtype)
     bfs = breadth_first_search_depth(pathmap, src, tgt)
     bfs_p = breadth_first_search(pathmap, src, tgt)
     print(f"from {src} to {tgt} for {mvtype.to_string()}:")
     print(f"  bfs: {bfs}")
     print(f"  bfs_path: {bfs_p}")
+
+    # TODO: load terrain_costs into NodeCosts
+    # TODO: make PathMap and LocationMap from JSON with terrrain_data obstacle_data
+    # TODO: build LocationMap from PathMap
+    # TODO: build NodeCosts for each MovementType using PathMap and LocationMap
+    # TODO: build CostTable for each MovementType using PathMap and NodeCosts

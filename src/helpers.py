@@ -1,20 +1,8 @@
 """Helper classes and functions for pathfinding visualization."""
+from collections.abc import Iterator
+from enum import Enum
 from pygame import Color
 from pygame.freetype import Font
-
-
-class Obstacles:
-    """Walls and structures in a tile."""
-
-    def __init__(
-        self,
-        structure: int = 0,
-        wall_n: int = 0,
-        wall_w: int = 0,
-    ) -> None:
-        self.structure = structure
-        self.wall_n = wall_n
-        self.wall_w = wall_w
 
 
 class Coords:
@@ -86,6 +74,47 @@ class Colors:
         self.medium = Color(medium)
         self.high = Color(high)
         self.air = Color(air)
+
+
+class Direction(Enum):
+    """Ten-way directions for 2D Pathing."""
+
+    N = 1
+    S = 2
+    E = 3
+    W = 4
+    NE = 5
+    NW = 6
+    SE = 7
+    SW = 8
+    ABOVE = 9
+    BELOW = 10
+
+    @staticmethod
+    def from_string(s: str):
+        match s:
+            case "N":
+                return Direction.N
+            case "S":
+                return Direction.S
+            case "E":
+                return Direction.E
+            case "W":
+                return Direction.W
+            case "NE":
+                return Direction.NE
+            case "NW":
+                return Direction.NW
+            case "SE":
+                return Direction.SE
+            case "SW":
+                return Direction.SW
+            case "above":
+                return Direction.ABOVE
+            case "below":
+                return Direction.BELOW
+            case _:
+                raise ValueError(f"Invalid string representation '{s}' of Direction!")
 
 
 class Settings:

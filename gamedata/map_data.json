@@ -1,0 +1,11 @@
+{
+    "tiles": [
+        "FFFF",
+        "FFFF",
+        "FFLM"
+    ],
+    "walls": {
+        "1,0": ["high_wall_w"],
+        "3,1": ["high_wall_n","high_wall_w"]
+    }
+}
